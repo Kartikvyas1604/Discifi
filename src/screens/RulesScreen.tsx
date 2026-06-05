@@ -121,28 +121,29 @@ function RuleCard({ rule, index }: { rule: Rule; index: number }) {
   }));
 
   return (
-    <AnimatedTouchable
-      onPressIn={() => { scale.value = withTiming(0.97, { duration: 100 }); }}
-      onPressOut={() => { scale.value = withTiming(1, { duration: 100 }); }}
-      entering={FadeInUp.delay(100 + index * 80).duration(400)}
-      style={[styles.ruleCard, animatedStyle]}
-      activeOpacity={1}
-    >
-      <CutCornerSVG size={14} />
-      <View style={{ position: 'relative', zIndex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.ruleType}>{rule.type.toUpperCase()}</Text>
-          <Text style={styles.ruleValue}>{rule.value}</Text>
+    <Animated.View entering={FadeInUp.delay(100 + index * 80).duration(400)}>
+      <AnimatedTouchable
+        onPressIn={() => { scale.value = withTiming(0.97, { duration: 100 }); }}
+        onPressOut={() => { scale.value = withTiming(1, { duration: 100 }); }}
+        style={[styles.ruleCard, animatedStyle]}
+        activeOpacity={1}
+      >
+        <CutCornerSVG size={14} />
+        <View style={{ position: 'relative', zIndex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.ruleType}>{rule.type.toUpperCase()}</Text>
+            <Text style={styles.ruleValue}>{rule.value}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => setToggled(t => t === 'active' ? 'paused' : 'active')}
+            style={{ marginRight: spacing.md }}
+          >
+            <AnimatedToggle status={toggled} />
+          </TouchableOpacity>
+          <Text style={styles.ruleEdit}>[EDIT]</Text>
         </View>
-        <TouchableOpacity
-          onPress={() => setToggled(t => t === 'active' ? 'paused' : 'active')}
-          style={{ marginRight: spacing.md }}
-        >
-          <AnimatedToggle status={toggled} />
-        </TouchableOpacity>
-        <Text style={styles.ruleEdit}>[EDIT]</Text>
-      </View>
-    </AnimatedTouchable>
+      </AnimatedTouchable>
+    </Animated.View>
   );
 }
 

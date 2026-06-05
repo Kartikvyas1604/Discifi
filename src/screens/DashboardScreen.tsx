@@ -57,33 +57,34 @@ function TransactionRow({ tx, index }: { tx: Transaction; index: number }) {
   }));
 
   return (
-    <AnimatedTouchable
-      onPressIn={() => { scale.value = withTiming(0.97, { duration: 100 }); }}
-      onPressOut={() => { scale.value = withTiming(1, { duration: 100 }); }}
-      entering={FadeInUp.delay(200 + index * 60).duration(400)}
-      style={[
-        styles.txRow,
-        animatedStyle,
-      ]}
-      activeOpacity={1}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-        <View
-          style={[
-            styles.riskDot,
-            { backgroundColor: riskColors[tx.risk] },
-          ]}
-        />
-        <Text style={styles.txAddress}>{tx.address}</Text>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <Text style={styles.txToken}>{tx.token}</Text>
-        <Text style={[styles.txAmount, { color: tx.amount.startsWith('+') ? theme.accent : theme.warning }]}>
-          {tx.amount}
-        </Text>
-        <Text style={styles.txTime}>{tx.time}</Text>
-      </View>
-    </AnimatedTouchable>
+    <Animated.View entering={FadeInUp.delay(200 + index * 60).duration(400)}>
+      <AnimatedTouchable
+        onPressIn={() => { scale.value = withTiming(0.97, { duration: 100 }); }}
+        onPressOut={() => { scale.value = withTiming(1, { duration: 100 }); }}
+        style={[
+          styles.txRow,
+          animatedStyle,
+        ]}
+        activeOpacity={1}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          <View
+            style={[
+              styles.riskDot,
+              { backgroundColor: riskColors[tx.risk] },
+            ]}
+          />
+          <Text style={styles.txAddress}>{tx.address}</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text style={styles.txToken}>{tx.token}</Text>
+          <Text style={[styles.txAmount, { color: tx.amount.startsWith('+') ? theme.accent : theme.warning }]}>
+            {tx.amount}
+          </Text>
+          <Text style={styles.txTime}>{tx.time}</Text>
+        </View>
+      </AnimatedTouchable>
+    </Animated.View>
   );
 }
 

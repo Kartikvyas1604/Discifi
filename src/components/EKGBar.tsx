@@ -4,7 +4,6 @@ import Animated, {
   useAnimatedProps,
   useSharedValue,
   withTiming,
-  withRepeat,
   Easing,
 } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
@@ -18,6 +17,7 @@ interface EKGBarProps {
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 function generateEKGWave(progress: number): string {
+  'worklet';
   const w = 300;
   const h = 40;
   const baseline = h / 2;
@@ -29,7 +29,6 @@ function generateEKGWave(progress: number): string {
     const normalizedX = x / w;
     let y = baseline;
 
-    const spikeRegion = 0.3;
     const spikeWidth = 0.08;
 
     if (normalizedX > 0.2 && normalizedX < 0.2 + spikeWidth) {
@@ -71,10 +70,8 @@ export function EKGBar({ value, height = 48 }: EKGBarProps) {
   }, [value, progress]);
 
   const pathLength = 300;
-  const fillLength = pathLength * value;
 
   const animatedProps = useAnimatedProps(() => {
-    const currentFill = fillLength * progress.value;
     const d = generateEKGWave(progress.value);
     return { d };
   });

@@ -1,14 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Text, type TextProps } from 'react-native';
-import Animated, {
-  useAnimatedProps,
-  useSharedValue,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
 import { theme } from '../theme';
-
-const AnimatedText = Animated.createAnimatedComponent(Text);
 
 interface AnimatedNumberProps extends TextProps {
   value: number;
@@ -16,6 +8,10 @@ interface AnimatedNumberProps extends TextProps {
   suffix?: string;
   decimals?: number;
   mono?: boolean;
+}
+
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
 }
 
 export function AnimatedNumber({
@@ -27,38 +23,42 @@ export function AnimatedNumber({
   style,
   ...props
 }: AnimatedNumberProps) {
-  const animatedValue = useSharedValue(value);
+  const [display, setDisplay] = useState(value);
 
   useEffect(() => {
-    animatedValue.value = withTiming(value, {
-      duration: 500,
-      easing: Easing.out(Easing.cubic),
-    });
-  }, [value, animatedValue]);
+    const duration = 400;
+    const start = performance.now();
+    const from = display;
+    const diff = value - from;
 
-  const animatedProps = useAnimatedProps(() => {
-    const display = animatedValue.value.toFixed(decimals);
-    const parts = display.split('.');
-    const intPart = parts[0].split('').join('');
-    const decPart = parts[1] || '0'.repeat(decimals);
+    let frameId: number;
+    function tick(now: number) {
+      const elapsed = now - start;
+      const t = Math.min(elapsed / duration, 1);
+      const eased = easeOutCubic(t);
+      setDisplay(from + diff * eased);
 
-    const chars = intPart.split('').map((c, i) => ({ char: c, index: intPart.length - i }));
-    const result = chars.map(({ char }) => char).join('') + (decimals > 0 ? '.' : '') + decPart;
+      if (t < 1) {
+        frameId = requestAnimationFrame(tick);
+      }
+    }
+    frameId = requestAnimationFrame(tick);
 
-    return {
-      text: `${prefix}${result}${suffix}`,
-    } as never;
-  });
+    return () => cancelAnimationFrame(frameId);
+  }, [value]);
+
+  const formatted = display.toFixed(decimals);
 
   return (
-    <AnimatedText
-      animatedProps={animatedProps}
+    <Text
       style={[
         mono && { fontFamily: theme.fontMono },
         { color: theme.text, fontSize: 16 },
         style,
       ]}
       {...props}
-    />
+    >
+      {prefix}{formatted}{suffix}
+    </Text>
   );
 }
