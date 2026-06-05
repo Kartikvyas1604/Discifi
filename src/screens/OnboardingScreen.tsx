@@ -135,7 +135,7 @@ export default function OnboardingScreen() {
   useEffect(() => {
     if (step === 3) {
       confirmScale.value = withSequence(
-        withTiming(1.2, { duration: 600, easing: Easing.out(Easing.back) }),
+        withTiming(1.2, { duration: 600, easing: Easing.out(Easing.cubic) }),
         withTiming(1, { duration: 200 }),
       );
     }
