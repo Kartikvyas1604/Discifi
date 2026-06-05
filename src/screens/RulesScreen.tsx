@@ -1,208 +1,79 @@
 import { useState } from 'react';
 import {
-  ScrollView,
   Text,
   View,
+  ScrollView,
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-  FadeInUp,
-  FadeIn,
-} from 'react-native-reanimated';
-import Svg, { Polygon } from 'react-native-svg';
-import { theme, spacing } from '../theme';
-
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
-
-type RuleCategory = 'spending' | 'allowlist' | 'frequency' | 'amount' | 'category';
-type RuleStatus = 'active' | 'paused';
+import { T } from '../theme';
+import { AccentCard } from '../components/AccentCard';
+import { GoldToggle } from '../components/GoldToggle';
 
 interface Rule {
   id: string;
-  type: RuleCategory;
-  label: string;
+  type: string;
   value: string;
-  status: RuleStatus;
+  scope: string;
+  active: boolean;
+  lastTriggered: string;
 }
-
-const CATEGORIES: { key: RuleCategory; label: string }[] = [
-  { key: 'spending', label: 'Spending' },
-  { key: 'allowlist', label: 'Allowlist' },
-  { key: 'frequency', label: 'Frequency' },
-  { key: 'amount', label: 'Amount' },
-  { key: 'category', label: 'Category' },
-];
 
 const MOCK_RULES: Rule[] = [
-  { id: '1', type: 'spending', label: 'Daily Limit', value: '$800 USD', status: 'active' },
-  { id: '2', type: 'allowlist', label: 'Approved DEXs', value: '6 contracts', status: 'active' },
-  { id: '3', type: 'frequency', label: 'Tx Cooldown', value: '30 seconds', status: 'active' },
-  { id: '4', type: 'amount', label: 'Max Per Tx', value: '$2,500', status: 'paused' },
-  { id: '5', type: 'category', label: 'Meme Coin Filter', value: 'Blocked', status: 'active' },
+  { id: '1', type: 'DAILY LIMIT', value: '$800', scope: 'All categories', active: true, lastTriggered: '2d ago' },
+  { id: '2', type: 'MAX PER TX', value: '$250', scope: 'All tokens', active: true, lastTriggered: '5d ago' },
+  { id: '3', type: 'ALLOWLIST', value: '8 contracts', scope: 'DeFi only', active: true, lastTriggered: 'Never' },
+  { id: '4', type: 'MIN HOLD', value: '24 hours', scope: 'New positions', active: false, lastTriggered: '—' },
+  { id: '5', type: 'AUTO-SAVE', value: '15%', scope: 'Incoming transfers', active: true, lastTriggered: '1h ago' },
 ];
 
-function CutCornerSVG({ size = 14 }: { size?: number }) {
-  const s = size;
-  return (
-    <Svg
-      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-      width="100%"
-      height="100%"
-      preserveAspectRatio="none"
-    >
-      <Polygon
-        points={`1,1 ${100 - s - 1},1 ${100 - 1},${s + 1} ${100 - 1},${100 - 1} 1,${100 - 1}`}
-        fill={theme.surface}
-        stroke={theme.border}
-        strokeWidth={1}
-      />
-    </Svg>
-  );
-}
-
-function AnimatedToggle({ status }: { status: RuleStatus }) {
-  const isActive = status === 'active';
-  const thumbPosition = useSharedValue(isActive ? 16 : 2);
-
-  const trackStyle = useAnimatedStyle(() => ({
-    backgroundColor: isActive ? theme.accent : theme.border,
-  }));
-
-  const thumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: thumbPosition.value }],
-  }));
-
-  return (
-    <View
-      style={{
-        width: 36,
-        height: 18,
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: theme.border,
-      }}
-    >
-      <Animated.View
-        style={[
-          {
-            width: '100%',
-            height: '100%',
-          },
-          trackStyle,
-        ]}
-      >
-        <Animated.View
-          style={[
-            {
-              width: 12,
-              height: 12,
-              backgroundColor: theme.bg,
-              position: 'absolute',
-              top: 2,
-            },
-            thumbStyle,
-          ]}
-        />
-      </Animated.View>
-    </View>
-  );
-}
-
-function RuleCard({ rule, index }: { rule: Rule; index: number }) {
-  const scale = useSharedValue(1);
-  const [toggled, setToggled] = useState(rule.status);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  return (
-    <Animated.View entering={FadeInUp.delay(100 + index * 80).duration(400)}>
-      <AnimatedTouchable
-        onPressIn={() => { scale.value = withTiming(0.97, { duration: 100 }); }}
-        onPressOut={() => { scale.value = withTiming(1, { duration: 100 }); }}
-        style={[styles.ruleCard, animatedStyle]}
-        activeOpacity={1}
-      >
-        <CutCornerSVG size={14} />
-        <View style={{ position: 'relative', zIndex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.ruleType}>{rule.type.toUpperCase()}</Text>
-            <Text style={styles.ruleValue}>{rule.value}</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => setToggled(t => t === 'active' ? 'paused' : 'active')}
-            style={{ marginRight: spacing.md }}
-          >
-            <AnimatedToggle status={toggled} />
-          </TouchableOpacity>
-          <Text style={styles.ruleEdit}>[EDIT]</Text>
-        </View>
-      </AnimatedTouchable>
-    </Animated.View>
-  );
-}
-
 export default function RulesScreen() {
-  const [activeCategory, setActiveCategory] = useState<RuleCategory>('spending');
+  const [rules, setRules] = useState(MOCK_RULES);
+
+  const toggleRule = (id: string) => {
+    setRules(prev => prev.map(r => r.id === id ? { ...r, active: !r.active } : r));
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.pathText}>~/wallet/rules</Text>
-        <Text style={styles.ruleCount}>{MOCK_RULES.length} rules</Text>
+        <Text style={styles.title}>YOUR COVENANTS</Text>
+        <Text style={styles.subtitle}>{rules.filter(r => r.active).length} ACTIVE</Text>
       </View>
 
       <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.chipScroll}
-        contentContainerStyle={styles.chipContainer}
-      >
-        {CATEGORIES.map(cat => (
-          <TouchableOpacity
-            key={cat.key}
-            style={[
-              styles.chip,
-              activeCategory === cat.key && styles.chipActive,
-            ]}
-            onPress={() => setActiveCategory(cat.key)}
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.chipText,
-                activeCategory === cat.key && styles.chipTextActive,
-              ]}
-            >
-              {cat.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
-        {MOCK_RULES
-          .filter(r => r.type === activeCategory)
-          .map((rule, i) => (
-            <RuleCard key={rule.id} rule={rule} index={i} />
-          ))}
+        {rules.map((rule, i) => (
+          <AccentCard
+            key={rule.id}
+            accentColor={rule.active ? T.gold : T.border}
+            style={[
+              styles.ruleCard,
+            ]}
+          >
+            <View style={styles.ruleTop}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.ruleType}>{rule.type}</Text>
+                <Text style={styles.ruleValue}>{rule.value}</Text>
+                <Text style={styles.ruleScope}>{rule.scope}</Text>
+              </View>
+              <GoldToggle active={rule.active} onToggle={() => toggleRule(rule.id)} />
+            </View>
+            <View style={styles.ruleDivider} />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={styles.ruleMeta}>Last triggered</Text>
+              <Text style={styles.ruleMetaValue}>{rule.lastTriggered}</Text>
+            </View>
+          </AccentCard>
+        ))}
 
-        <Animated.View
-          entering={FadeIn.duration(400).delay(400)}
-          style={styles.addCard}
-        >
+        <TouchableOpacity style={styles.addCard} activeOpacity={0.7}>
           <Text style={styles.addGlyph}>+</Text>
-          <Text style={styles.addText}>ADD RULE</Text>
-        </Animated.View>
+          <Text style={styles.addText}>NEW COVENANT</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -211,109 +82,87 @@ export default function RulesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.bg,
+    backgroundColor: T.bg,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: T.s4,
     paddingTop: 60,
-    paddingBottom: spacing.lg,
+    marginBottom: T.s5,
   },
-  pathText: {
-    fontFamily: theme.fontMono,
-    fontSize: 13,
-    color: theme.accent,
-    letterSpacing: 0.5,
+  title: {
+    fontFamily: T.fontDisplay,
+    fontSize: 28,
+    color: T.ink,
+    marginBottom: T.s1,
   },
-  ruleCount: {
-    fontFamily: theme.fontMono,
+  subtitle: {
+    fontFamily: T.fontMono,
     fontSize: 11,
-    color: theme.muted,
-  },
-  chipScroll: {
-    maxHeight: 40,
-    marginBottom: spacing.lg,
-  },
-  chipContainer: {
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
-    flexDirection: 'row',
-  },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.surface,
-    borderRadius: 2,
-    shadowColor: theme.border,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 0,
-    elevation: 3,
-  },
-  chipActive: {
-    borderColor: theme.accent,
-    backgroundColor: theme.accent,
-  },
-  chipText: {
-    fontFamily: theme.fontBody,
-    fontSize: 11,
-    color: theme.textDim,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  chipTextActive: {
-    color: theme.bg,
-    fontWeight: '600',
-  },
-  ruleCard: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-    height: 80,
-    position: 'relative',
-    justifyContent: 'center',
-  },
-  ruleType: {
-    fontFamily: theme.fontBody,
-    fontSize: 10,
-    color: theme.muted,
-    letterSpacing: 1.5,
-    marginBottom: 4,
-  },
-  ruleValue: {
-    fontFamily: theme.fontMonoBold,
-    fontSize: 18,
-    color: theme.text,
-  },
-  ruleEdit: {
-    fontFamily: theme.fontMono,
-    fontSize: 11,
-    color: theme.accent,
+    color: T.gold,
     letterSpacing: 1,
   },
+  ruleCard: {
+    marginHorizontal: T.s4,
+    marginBottom: T.s3,
+  },
+  ruleTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  ruleType: {
+    fontFamily: T.fontBody,
+    fontSize: 9,
+    letterSpacing: 2,
+    color: T.inkMuted,
+    marginBottom: 2,
+  },
+  ruleValue: {
+    fontFamily: T.fontFigures,
+    fontSize: 32,
+    color: T.ink,
+    lineHeight: 36,
+    marginBottom: 2,
+  },
+  ruleScope: {
+    fontFamily: T.fontBody,
+    fontSize: 11,
+    color: T.inkMuted,
+  },
+  ruleDivider: {
+    height: T.hairline,
+    backgroundColor: T.border,
+    marginVertical: T.s2,
+  },
+  ruleMeta: {
+    fontFamily: T.fontMono,
+    fontSize: 10,
+    color: T.inkFaint,
+  },
+  ruleMetaValue: {
+    fontFamily: T.fontMono,
+    fontSize: 10,
+    color: T.inkMuted,
+  },
   addCard: {
-    marginHorizontal: spacing.lg,
+    marginHorizontal: T.s4,
     borderWidth: 1,
-    borderColor: theme.border,
+    borderColor: T.border,
     borderStyle: 'dashed',
-    padding: spacing.xl,
+    padding: T.s5,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: T.s2,
   },
   addGlyph: {
-    fontFamily: theme.fontMonoBold,
-    fontSize: 20,
-    color: theme.mutedLight,
+    fontFamily: T.fontBody,
+    fontSize: 16,
+    color: T.gold,
   },
   addText: {
-    fontFamily: theme.fontBody,
+    fontFamily: T.fontBody,
     fontSize: 11,
-    color: theme.mutedLight,
     letterSpacing: 2,
+    color: T.gold,
   },
 });

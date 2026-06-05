@@ -1,9 +1,9 @@
-import { Text, View, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { View, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import Svg, { Rect, Polygon, Circle, Path } from 'react-native-svg';
-import { theme } from '../theme';
+import { T } from '../theme';
+import { Glyph } from '../components/Glyph';
 import DashboardScreen from '../screens/DashboardScreen';
 import RulesScreen from '../screens/RulesScreen';
 import VaultScreen from '../screens/VaultScreen';
@@ -11,61 +11,26 @@ import OnboardingScreen from '../screens/OnboardingScreen';
 import TransactionGateScreen from '../screens/TransactionGateScreen';
 
 type TabParamList = {
-  Dashboard: undefined;
-  Rules: undefined;
-  Vault: undefined;
-};
-
-type StackParamList = {
-  MainTabs: undefined;
-  TransactionGate: undefined;
-  Onboarding: undefined;
+  Ledger: undefined;
+  Covenants: undefined;
+  Reserve: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
-const Stack = createNativeStackNavigator<StackParamList>();
 
-function GridIcon({ active }: { active: boolean }) {
-  const color = active ? theme.accent : theme.muted;
-  return (
-    <Svg width={20} height={20} viewBox="0 0 20 20">
-      <Rect x="1" y="1" width="7" height="7" fill="none" stroke={color} strokeWidth={1.2} />
-      <Rect x="12" y="1" width="7" height="7" fill="none" stroke={color} strokeWidth={1.2} />
-      <Rect x="1" y="12" width="7" height="7" fill="none" stroke={color} strokeWidth={1.2} />
-      <Rect x="12" y="12" width="7" height="7" fill="none" stroke={color} strokeWidth={1.2} />
-    </Svg>
-  );
-}
+const NAV_ITEMS = [
+  { key: 'Ledger', glyph: '◈' as const },
+  { key: 'Covenants', glyph: '◆' as const },
+  { key: 'Reserve', glyph: '⊕' as const },
+];
 
-function RulesIcon({ active }: { active: boolean }) {
-  const color = active ? theme.accent : theme.muted;
-  return (
-    <Svg width={20} height={20} viewBox="0 0 20 20">
-      <Polygon points="10,2 18,6 18,14 10,18 2,14 2,6" fill="none" stroke={color} strokeWidth={1.2} />
-      <Circle cx="10" cy="10" r="3" fill="none" stroke={color} strokeWidth={1.2} />
-    </Svg>
-  );
-}
-
-function VaultIcon({ active }: { active: boolean }) {
-  const color = active ? theme.accent : theme.muted;
-  return (
-    <Svg width={20} height={20} viewBox="0 0 20 20">
-      <Rect x="2" y="6" width="16" height="12" fill="none" stroke={color} strokeWidth={1.2} />
-      <Path d="M6,6 L6,4 Q6,2 10,2 Q14,2 14,4 L14,6" fill="none" stroke={color} strokeWidth={1.2} />
-      <Circle cx="10" cy="12" r="2" fill="none" stroke={color} strokeWidth={1.2} />
-    </Svg>
-  );
-}
-
-function TabBar({ state, descriptors, navigation }: any) {
-  const icons = [GridIcon, RulesIcon, VaultIcon];
-
+function TabBar({ state, descriptors, navigation, onTestTx }: any) {
   return (
     <View style={styles.tabBar}>
       {state.routes.map((route: any, index: number) => {
         const isFocused = state.index === index;
-        const Icon = icons[index];
+        const item = NAV_ITEMS[index];
+        if (!item) return null;
 
         const onPress = () => {
           const event = navigation.emit({
@@ -73,52 +38,60 @@ function TabBar({ state, descriptors, navigation }: any) {
             target: route.key,
             canPreventDefault: true,
           });
-
           if (!isFocused && !event.defaultPrevented) {
             navigation.navigate(route.name);
           }
         };
 
         return (
-          <View key={route.key} style={styles.tabItem}>
-            <Icon active={isFocused} />
-            {isFocused && <View style={styles.tabIndicator} />}
-          </View>
+          <TouchableOpacity
+            key={route.key}
+            onPress={onPress}
+            style={styles.tabItem}
+            activeOpacity={0.7}
+          >
+            <Glyph
+              symbol={item.glyph}
+              size={18}
+              color={isFocused ? T.gold : T.inkFaint}
+            />
+          </TouchableOpacity>
         );
       })}
+      <TouchableOpacity style={styles.tabItem} onPress={onTestTx} activeOpacity={0.7}>
+        <Glyph symbol="⊗" size={16} color={T.danger} />
+      </TouchableOpacity>
     </View>
   );
 }
 
-function MainTabs() {
+function MainTabs({ onTestTx }: { onTestTx: () => void }) {
   return (
     <Tab.Navigator
-      tabBar={(props) => <TabBar {...props} />}
+      tabBar={(props) => <TabBar {...props} onTestTx={onTestTx} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Rules" component={RulesScreen} />
-      <Tab.Screen name="Vault" component={VaultScreen} />
+      <Tab.Screen name="Ledger" component={DashboardScreen} />
+      <Tab.Screen name="Covenants" component={RulesScreen} />
+      <Tab.Screen name="Reserve" component={VaultScreen} />
     </Tab.Navigator>
   );
 }
 
 export default function AppNavigator() {
+  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showTxGate, setShowTxGate] = useState(false);
+
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
-        <Stack.Screen name="MainTabs" component={MainTabs} />
-        <Stack.Screen
-          name="TransactionGate"
-          component={TransactionGateScreen}
-          options={{ presentation: 'fullScreenModal', animation: 'fade' }}
-        />
-        <Stack.Screen
-          name="Onboarding"
-          component={OnboardingScreen}
-          options={{ presentation: 'fullScreenModal', animation: 'slide_from_right' }}
-        />
-      </Stack.Navigator>
+      <Modal visible={showOnboarding} animationType="fade" onRequestClose={() => {}}>
+        <OnboardingScreen onComplete={() => setShowOnboarding(false)} />
+      </Modal>
+      <TransactionGateScreen
+        visible={showTxGate}
+        onClose={() => setShowTxGate(false)}
+      />
+      <MainTabs onTestTx={() => setShowTxGate(true)} />
     </NavigationContainer>
   );
 }
@@ -126,22 +99,16 @@ export default function AppNavigator() {
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: theme.surface,
-    borderTopWidth: 1,
-    borderTopColor: theme.border,
-    paddingBottom: 24,
-    paddingTop: 12,
-    height: 72,
+    backgroundColor: T.bg,
+    borderTopWidth: T.hairline,
+    borderTopColor: T.border,
+    paddingBottom: 28,
+    paddingTop: T.s3,
+    height: 64,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  tabIndicator: {
-    width: 16,
-    height: 2,
-    backgroundColor: theme.accent,
-    marginTop: 6,
   },
 });

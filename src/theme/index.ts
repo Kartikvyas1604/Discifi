@@ -1,52 +1,55 @@
-export const theme = {
-  bg: '#0A0A08',
-  surface: '#1C1C18',
-  surfaceAlt: '#22221C',
-  border: '#2A2A22',
-  accent: '#C8F135',
-  accentDim: '#8FB321',
-  warning: '#FF6B2B',
-  warningDim: '#B84D1E',
-  muted: '#5A5A50',
-  mutedLight: '#7A7A6A',
-  text: '#E8E8D8',
-  textDim: '#B8B8A8',
+import { StyleSheet } from 'react-native';
 
-  green: '#4ADE80',
-  amber: '#FBBF24',
-  red: '#FF4B4B',
+export const T = {
+  bg: '#F5F0E8',
+  surface: '#EDE8DE',
+  surfaceDeep: '#E2DDD3',
+  ink: '#1A1814',
+  inkMuted: '#7A7368',
+  inkFaint: '#B8B0A4',
+  gold: '#B8960C',
+  goldLight: '#D4AF3A',
+  danger: '#8B2E2E',
+  safe: '#2E5C3E',
+  border: '#D4CFC6',
 
-  fontDisplay: 'DMSerifDisplay_400Regular',
-  fontDisplayRegular: 'DMSerifDisplay_400Regular',
-  fontMono: 'JetBrainsMono_400Regular',
-  fontMonoBold: 'JetBrainsMono_700Bold',
-  fontBody: 'Syne_400Regular',
-  fontBodyMedium: 'Syne_500Medium',
-  fontBodyBold: 'Syne_700Bold',
+  fontDisplay: 'PlayfairDisplay_400Regular',
+  fontDisplayItalic: 'PlayfairDisplay_400Regular_Italic',
+  fontDisplayBold: 'PlayfairDisplay_700Bold',
+  fontDisplayBoldItalic: 'PlayfairDisplay_700Bold_Italic',
+  fontFigures: 'CormorantGaramond_400Regular_Italic',
+  fontFiguresBold: 'CormorantGaramond_700Bold_Italic',
+  fontBody: 'LibreBaskerville_400Regular',
+  fontBodyBold: 'LibreBaskerville_700Bold',
+  fontBodyItalic: 'LibreBaskerville_400Regular_Italic',
+  fontMono: 'CourierPrime_400Regular',
+  fontMonoBold: 'CourierPrime_700Bold',
 
-  radius: 0,
-  radiusChip: 2,
+  s1: 4, s2: 8, s3: 12, s4: 16, s5: 24, s6: 32, s7: 48, s8: 64,
 
-  clipCorner: 14,
+  radius: 4,
+  radiusNone: 0,
+  hairline: StyleSheet.hairlineWidth,
+  accentBar: 3,
 } as const;
 
-export type Theme = typeof theme;
+export type Theme = typeof T;
 
-export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
-  xxxl: 32,
-  huge: 48,
-} as const;
+export function toRoman(n: number): string {
+  const map: [number, string][] = [
+    [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I'],
+  ];
+  let result = '';
+  let remaining = n;
+  for (const [val, sym] of map) {
+    while (remaining >= val) {
+      result += sym;
+      remaining -= val;
+    }
+  }
+  return result || 'I';
+}
 
-export const opacity = {
-  subtle: 0.08,
-  light: 0.12,
-  medium: 0.2,
-  strong: 0.4,
-  intense: 0.6,
-} as const;
+export function formatCurrency(n: number): string {
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}

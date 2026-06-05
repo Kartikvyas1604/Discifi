@@ -1,120 +1,41 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
-  ScrollView,
   Text,
   View,
+  ScrollView,
   TouchableOpacity,
   StyleSheet,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
+  Dimensions,
 } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-  withSequence,
-  Easing,
-  FadeInUp,
-  FadeIn,
-} from 'react-native-reanimated';
-import { theme, spacing } from '../theme';
-import { EKGBar } from '../components/EKGBar';
-import { RadialGauge } from '../components/RadialGauge';
-import { FloatingPill } from '../components/FloatingPill';
-import { TerminalLoader } from '../components/TerminalLoader';
+import { T, formatCurrency, toRoman } from '../theme';
+import { AccentCard } from '../components/AccentCard';
+import { Glyph } from '../components/Glyph';
 
-const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+const { width: SCREEN_W } = Dimensions.get('window');
 
-interface Transaction {
+interface Tx {
   id: string;
-  address: string;
-  token: string;
-  amount: string;
-  risk: 'low' | 'medium' | 'high';
-  time: string;
+  merchant: string;
+  amount: number;
+  date: string;
+  flagged: boolean;
 }
 
-const MOCK_TX: Transaction[] = [
-  { id: '1', address: '0x7a3b...9f2c', token: 'SOL', amount: '+12.45', risk: 'low', time: '12s' },
-  { id: '2', address: '0x1d8f...4e7a', token: 'USDC', amount: '-250.00', risk: 'low', time: '45s' },
-  { id: '3', address: '0x9e4c...2b11', token: 'BONK', amount: '+50000', risk: 'medium', time: '2m' },
-  { id: '4', address: '0x3f7a...8d33', token: 'JUP', amount: '-1,200', risk: 'high', time: '5m' },
-  { id: '5', address: '0x6b2d...c5ee', token: 'SOL', amount: '+8.20', risk: 'low', time: '8m' },
-  { id: '6', address: '0x2e9a...1f44', token: 'PYTH', amount: '+340', risk: 'medium', time: '12m' },
+const MOCK_TXS: Tx[] = [
+  { id: '1', merchant: 'Jupiter DEX', amount: -1240, date: '12m', flagged: true },
+  { id: '2', merchant: 'Coinbase', amount: 500, date: '1h', flagged: false },
+  { id: '3', merchant: 'Magic Eden', amount: -80, date: '3h', flagged: false },
+  { id: '4', merchant: 'Uniswap V3', amount: -2450, date: '5h', flagged: true },
+  { id: '5', merchant: 'Solend Deposit', amount: 1200, date: '12h', flagged: false },
+  { id: '6', merchant: 'Orca LP', amount: -340, date: '1d', flagged: false },
+  { id: '7', merchant: 'Drift Protocol', amount: -920, date: '1d', flagged: true },
+  { id: '8', merchant: 'Kamino Earn', amount: 2000, date: '2d', flagged: false },
+  { id: '9', merchant: 'Meteora DLMM', amount: -150, date: '2d', flagged: false },
+  { id: '10', merchant: 'Sanctum', amount: 100, date: '3d', flagged: false },
 ];
 
-const riskColors = {
-  low: theme.green,
-  medium: theme.amber,
-  high: theme.red,
-};
-
-function TransactionRow({ tx, index }: { tx: Transaction; index: number }) {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  return (
-    <Animated.View entering={FadeInUp.delay(200 + index * 60).duration(400)}>
-      <AnimatedTouchable
-        onPressIn={() => { scale.value = withTiming(0.97, { duration: 100 }); }}
-        onPressOut={() => { scale.value = withTiming(1, { duration: 100 }); }}
-        style={[
-          styles.txRow,
-          animatedStyle,
-        ]}
-        activeOpacity={1}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-          <View
-            style={[
-              styles.riskDot,
-              { backgroundColor: riskColors[tx.risk] },
-            ]}
-          />
-          <Text style={styles.txAddress}>{tx.address}</Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Text style={styles.txToken}>{tx.token}</Text>
-          <Text style={[styles.txAmount, { color: tx.amount.startsWith('+') ? theme.accent : theme.warning }]}>
-            {tx.amount}
-          </Text>
-          <Text style={styles.txTime}>{tx.time}</Text>
-        </View>
-      </AnimatedTouchable>
-    </Animated.View>
-  );
-}
-
 export default function DashboardScreen() {
-  const [loading, setLoading] = useState(true);
-  const [spendPercent, setSpendPercent] = useState(0);
-  const scrollY = useSharedValue(0);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setLoading(false);
-      setSpendPercent(0.62);
-    }, 1500);
-    return () => clearTimeout(t);
-  }, []);
-
-  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    scrollY.value = e.nativeEvent.contentOffset.y;
-  }, [scrollY]);
-
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <TerminalLoader dots={5} />
-          <Text style={styles.loadingText}>SYNCING WALLET</Text>
-        </View>
-      </View>
-    );
-  }
+  const [balance] = useState(42850.75);
 
   return (
     <View style={styles.container}>
@@ -122,69 +43,78 @@ export default function DashboardScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
       >
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>DISCFI</Text>
-          <FloatingPill label="INTENTS ACTIVE" count={4} />
+        <View style={styles.wordmarkRow}>
+          <Text style={styles.wordmark}>DISCIFI</Text>
         </View>
 
-        <View style={styles.vitalsRow}>
-          <Animated.View
-            entering={FadeInUp.duration(500).delay(100)}
-            style={[styles.vitalsCard, { flex: 2, marginRight: 4 }]}
-          >
-            <Text style={styles.vitalsLabel}>TODAY'S SPEND</Text>
-            <Text style={styles.vitalsValue}>$247.80</Text>
-            <Text style={styles.vitalsSub}>+12.4% vs avg</Text>
-          </Animated.View>
-          <Animated.View
-            entering={FadeInUp.duration(500).delay(200)}
-            style={[styles.vitalsCard, { flex: 1, marginLeft: 4 }]}
-          >
-            <Text style={styles.vitalsLabel}>ACTIVE</Text>
-            <Text style={[styles.vitalsValue, { fontSize: 28 }]}>4</Text>
-            <Text style={styles.vitalsSub}>rules</Text>
-          </Animated.View>
+        <View style={styles.heroRow}>
+          <View style={{ flex: 2 }}>
+            <Text style={styles.portfolioLabel}>PORTFOLIO</Text>
+            <Text style={styles.balanceValue}>
+              ${formatCurrency(balance)}
+            </Text>
+          </View>
+          <View style={{ flex: 1, gap: T.s2 }}>
+            <View>
+              <Text style={styles.microLabel}>TODAY</Text>
+              <Text style={styles.microValue}>$247</Text>
+            </View>
+            <View>
+              <Text style={styles.microLabel}>WEEK</Text>
+              <Text style={styles.microValue}>$1,840</Text>
+            </View>
+            <View>
+              <Text style={styles.microLabel}>MONTH</Text>
+              <Text style={styles.microValue}>$6,210</Text>
+            </View>
+          </View>
         </View>
 
-        <Animated.View
-          entering={FadeInUp.duration(500).delay(300)}
-        >
-          <RadialGauge value={0.28} size={100} label="RISK SCORE" />
-        </Animated.View>
+        <View style={styles.divider} />
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>SPENDING LIMIT</Text>
-          <Text style={styles.sectionSub}>$5,000 / $8,000</Text>
-        </View>
-        <Animated.View
-          entering={FadeInUp.duration(500).delay(350)}
-          style={{ marginHorizontal: spacing.lg, marginBottom: spacing.xxl }}
-        >
-          <EKGBar value={spendPercent} height={40} />
-        </Animated.View>
+        <AccentCard style={{ marginHorizontal: T.s4, marginBottom: T.s5 }}>
+          <View style={{ alignItems: 'center', paddingVertical: T.s2 }}>
+            <Text style={styles.disciplineNumeral}>{toRoman(2)}</Text>
+            <Text style={styles.disciplineLabel}>DISCIPLINE INDEX</Text>
+            <View style={styles.disciplineRules}>
+              <View style={styles.disciplineVertRule} />
+              <Text style={styles.disciplineQuote}>
+                No rule violations in 7 days.
+              </Text>
+              <View style={styles.disciplineVertRule} />
+            </View>
+          </View>
+        </AccentCard>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>RECENT TRANSACTIONS</Text>
         </View>
 
-        <View style={styles.txList}>
-          {MOCK_TX.map((tx, i) => (
-            <TransactionRow key={tx.id} tx={tx} index={i} />
+        <View style={{ paddingHorizontal: T.s4 }}>
+          {MOCK_TXS.map((tx) => (
+            <TouchableOpacity
+              key={tx.id}
+              activeOpacity={0.7}
+              style={[
+                styles.txRow,
+                tx.flagged && { borderLeftWidth: 2, borderLeftColor: T.gold, paddingLeft: T.s3 - 2 },
+              ]}
+            >
+              <Text style={styles.txMerchant}>{tx.merchant}</Text>
+              <Text style={styles.txDate}>{tx.date}</Text>
+              <Text
+                style={[
+                  styles.txAmount,
+                  { color: tx.amount > 0 ? T.safe : T.ink },
+                ]}
+              >
+                {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
+              </Text>
+            </TouchableOpacity>
           ))}
         </View>
       </ScrollView>
-
-      <Animated.View
-        entering={FadeIn.duration(600).delay(800)}
-        style={styles.simulateBtnContainer}
-      >
-        <TouchableOpacity style={styles.simulateBtn} activeOpacity={0.85}>
-          <Text style={styles.simulateBtnText}>SIMULATE TX</Text>
-        </TouchableOpacity>
-      </Animated.View>
     </View>
   );
 }
@@ -192,138 +122,119 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.bg,
+    backgroundColor: T.bg,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
-  },
-  loadingText: {
-    fontFamily: theme.fontMono,
-    fontSize: 11,
-    color: theme.muted,
-    letterSpacing: 2,
-    marginTop: spacing.md,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
+  wordmarkRow: {
     paddingTop: 60,
-    paddingBottom: spacing.xl,
+    paddingBottom: T.s5,
+    alignItems: 'center',
   },
-  headerTitle: {
-    fontFamily: theme.fontDisplay,
-    fontSize: 28,
-    color: theme.text,
-    letterSpacing: 1,
+  wordmark: {
+    fontFamily: T.fontDisplay,
+    fontSize: 12,
+    letterSpacing: 6,
+    color: T.gold,
   },
-  vitalsRow: {
+  heroRow: {
     flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md,
+    paddingHorizontal: T.s4,
+    marginBottom: T.s5,
   },
-  vitalsCard: {
-    backgroundColor: theme.surface,
-    borderWidth: 1,
-    borderColor: theme.border,
-    padding: spacing.lg,
-    borderRadius: 0,
-  },
-  vitalsLabel: {
-    fontFamily: theme.fontBody,
+  portfolioLabel: {
+    fontFamily: T.fontBody,
     fontSize: 10,
-    color: theme.muted,
     letterSpacing: 1.5,
-    marginBottom: spacing.xs,
+    color: T.inkMuted,
+    marginBottom: T.s1,
   },
-  vitalsValue: {
-    fontFamily: theme.fontMonoBold,
-    fontSize: 24,
-    color: theme.text,
-    marginBottom: 2,
+  balanceValue: {
+    fontFamily: T.fontFigures,
+    fontSize: 52,
+    color: T.ink,
+    lineHeight: 56,
   },
-  vitalsSub: {
-    fontFamily: theme.fontMono,
-    fontSize: 10,
-    color: theme.mutedLight,
+  microLabel: {
+    fontFamily: T.fontBody,
+    fontSize: 9,
+    letterSpacing: 1,
+    color: T.inkMuted,
+    marginBottom: 1,
+  },
+  microValue: {
+    fontFamily: T.fontBody,
+    fontSize: 14,
+    color: T.ink,
+  },
+  divider: {
+    height: T.hairline,
+    backgroundColor: T.border,
+    marginHorizontal: T.s4,
+    marginBottom: T.s5,
+  },
+  disciplineNumeral: {
+    fontFamily: T.fontDisplay,
+    fontSize: 72,
+    color: T.ink,
+    lineHeight: 78,
+  },
+  disciplineLabel: {
+    fontFamily: T.fontBody,
+    fontSize: 9,
+    letterSpacing: 2,
+    color: T.inkMuted,
+    marginBottom: T.s2,
+  },
+  disciplineRules: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: T.s3,
+  },
+  disciplineVertRule: {
+    width: 1,
+    height: 16,
+    backgroundColor: T.border,
+  },
+  disciplineQuote: {
+    fontFamily: T.fontFigures,
+    fontSize: 12,
+    color: T.inkMuted,
+    fontStyle: 'italic',
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.md,
+    paddingHorizontal: T.s4,
+    marginBottom: T.s2,
   },
   sectionTitle: {
-    fontFamily: theme.fontBody,
-    fontSize: 11,
-    color: theme.muted,
+    fontFamily: T.fontBody,
+    fontSize: 9,
     letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  sectionSub: {
-    fontFamily: theme.fontMono,
-    fontSize: 12,
-    color: theme.textDim,
-  },
-  txList: {
-    paddingHorizontal: spacing.lg,
+    color: T.inkMuted,
   },
   txRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.border,
+    paddingVertical: T.s3,
+    borderBottomWidth: T.hairline,
+    borderBottomColor: T.border,
   },
-  riskDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 0,
-    marginRight: spacing.sm,
+  txMerchant: {
+    flex: 1,
+    fontFamily: T.fontBody,
+    fontSize: 13,
+    color: T.ink,
   },
-  txAddress: {
-    fontFamily: theme.fontMono,
-    fontSize: 12,
-    color: theme.textDim,
-  },
-  txToken: {
-    fontFamily: theme.fontMono,
+  txDate: {
+    fontFamily: T.fontMono,
     fontSize: 10,
-    color: theme.mutedLight,
-    marginRight: 2,
+    color: T.inkFaint,
+    marginRight: T.s3,
+    width: 32,
+    textAlign: 'right',
   },
   txAmount: {
-    fontFamily: theme.fontMonoBold,
-    fontSize: 13,
-  },
-  txTime: {
-    fontFamily: theme.fontMono,
-    fontSize: 10,
-    color: theme.muted,
-  },
-  simulateBtnContainer: {
-    position: 'absolute',
-    bottom: 30,
-    left: spacing.lg,
-    right: spacing.lg,
-  },
-  simulateBtn: {
-    backgroundColor: theme.accent,
-    paddingVertical: 18,
-    alignItems: 'center',
-    borderRadius: 0,
-  },
-  simulateBtnText: {
-    fontFamily: theme.fontMonoBold,
+    fontFamily: T.fontFigures,
     fontSize: 14,
-    color: theme.bg,
-    letterSpacing: 2,
+    minWidth: 80,
+    textAlign: 'right',
   },
 });

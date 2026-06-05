@@ -1,271 +1,263 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Text,
   View,
   TouchableOpacity,
   StyleSheet,
+  Modal,
 } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withTiming,
-  withSequence,
-  withDelay,
   Easing,
   FadeIn,
 } from 'react-native-reanimated';
-import { theme, spacing } from '../theme';
-import { PulseRing } from '../components/PulseRing';
+import { T } from '../theme';
+import { Glyph } from '../components/Glyph';
 
-function FlickerText({ text, style }: { text: string; style?: any }) {
-  const opacity = useSharedValue(1);
-
-  useEffect(() => {
-    opacity.value = withRepeat(
-      withSequence(
-        withTiming(0.7, { duration: 400, easing: Easing.ease }),
-        withTiming(1, { duration: 400, easing: Easing.ease }),
-      ),
-      -1,
-      true,
-    );
-  }, [opacity]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
-
-  return (
-    <Animated.Text style={[style, animatedStyle]}>
-      {text}
-    </Animated.Text>
-  );
-}
-
-interface RiskRowProps {
+interface EvidenceRow {
   label: string;
-  value: number;
+  value: string;
   color: string;
 }
 
-function RiskRow({ label, value, color }: RiskRowProps) {
+function EvidenceList({ items }: { items: EvidenceRow[] }) {
   return (
-    <View style={styles.riskRow}>
-      <Text style={styles.riskLabel}>{label}</Text>
-      <View style={styles.riskBarTrack}>
-        <View style={[styles.riskBarFill, { width: `${value * 100}%`, backgroundColor: color }]} />
-      </View>
+    <View style={styles.evidenceList}>
+      {items.map((item, i) => (
+        <View key={i} style={styles.evidenceRow}>
+          <Text style={styles.evidenceLabel}>{item.label}</Text>
+          <Text style={[styles.evidenceValue, { color: item.color }]}>{item.value}</Text>
+        </View>
+      ))}
     </View>
   );
 }
 
-export default function TransactionGateScreen() {
-  const modalScale = useSharedValue(0.96);
-  const modalOpacity = useSharedValue(0);
+interface TransactionGateScreenProps {
+  visible: boolean;
+  onClose: () => void;
+}
+
+export default function TransactionGateScreen({ visible, onClose }: TransactionGateScreenProps) {
+  const [resolved, setResolved] = useState<'rejected' | 'approved' | null>(null);
+  const rotation = useSharedValue(0);
 
   useEffect(() => {
-    modalScale.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) });
-    modalOpacity.value = withTiming(1, { duration: 300 });
-  }, []);
+    if (visible) {
+      rotation.value = withRepeat(
+        withTiming(360, { duration: 8000, easing: Easing.linear }),
+        -1,
+        false,
+      );
+    }
+    setResolved(null);
+  }, [visible]);
 
-  const modalStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: modalScale.value }],
-    opacity: modalOpacity.value,
+  const rotateStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }],
   }));
 
+  const handleReject = () => setResolved('rejected');
+  const handleApprove = () => setResolved('approved');
+
+  if (resolved === 'rejected') {
+    return (
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+        <View style={styles.overlay}>
+          <View style={styles.modal}>
+            <Glyph symbol="⊘" size={36} color={T.danger} />
+            <Text style={styles.verdictText}>TRANSACTION REJECTED</Text>
+            <Text style={styles.verdictSubtext}>No funds moved.</Text>
+            <TouchableOpacity style={styles.dismissBtn} onPress={onClose} activeOpacity={0.7}>
+              <Text style={styles.dismissText}>DISMISS</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
+
+  if (resolved === 'approved') {
+    return (
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+        <View style={styles.overlay}>
+          <View style={styles.modal}>
+            <Glyph symbol="◈" size={36} color={T.gold} />
+            <Text style={styles.verdictText}>TRANSACTION PROCEEDED</Text>
+            <Text style={styles.verdictSubtext}>$2,450 approved.</Text>
+            <TouchableOpacity style={styles.dismissBtn} onPress={onClose} activeOpacity={0.7}>
+              <Text style={styles.dismissText}>DISMISS</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <View style={styles.pulseContainer}>
-        <PulseRing size={300} color={theme.warning} count={3} />
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.overlay}>
+        <Animated.View entering={FadeIn.duration(240)} style={styles.modal}>
+          <Text style={styles.reviewLabel}>TRANSACTION REVIEW</Text>
+
+          <View style={{ alignItems: 'center', marginVertical: T.s5 }}>
+            <Animated.View style={rotateStyle}>
+              <Glyph symbol="◈" size={40} color={T.gold} />
+            </Animated.View>
+          </View>
+
+          <Text style={styles.contractAddress}>0x4f3c...b82a</Text>
+
+          <View style={styles.riskSection}>
+            <Text style={styles.riskNumeral}>III</Text>
+            <Text style={styles.riskLabel}>MODERATE RISK</Text>
+          </View>
+
+          <EvidenceList
+            items={[
+              { label: 'CONTRACT AGE', value: '14 days', color: T.danger },
+              { label: 'APPROVAL AMOUNT', value: '$1,240', color: T.gold },
+              { label: 'TOKEN CATEGORY', value: 'Memecoin', color: T.danger },
+              { label: 'BEHAVIOR MATCH', value: 'New pattern', color: T.inkMuted },
+            ]}
+          />
+
+          <View style={styles.actions}>
+            <TouchableOpacity style={styles.rejectBtn} onPress={handleReject} activeOpacity={0.85}>
+              <Text style={styles.rejectText}>REJECT</Text>
+            </TouchableOpacity>
+            <View style={styles.actionDivider} />
+            <TouchableOpacity style={styles.approveBtn} onPress={handleApprove} activeOpacity={0.85}>
+              <Text style={styles.approveText}>⚠ PROCEED ANYWAY</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
       </View>
-
-      <Animated.View style={[styles.modal, modalStyle]} entering={FadeIn.duration(300)}>
-        <View style={styles.warningHeader}>
-          <Text style={styles.warningIcon}>⚠</Text>
-          <FlickerText text="TRANSACTION REVIEW" style={styles.warningTitle} />
-        </View>
-
-        <View style={styles.addressSection}>
-          <Text style={styles.addressLabel}>CONTRACT</Text>
-          <Text style={styles.addressValue}>0x7a3b...9f2c</Text>
-          <Text style={styles.addressHint}>unverified source</Text>
-        </View>
-
-        <View style={styles.amountSection}>
-          <Text style={styles.amountLabel}>REQUESTED AMOUNT</Text>
-          <Text style={styles.amountValue}>$2,450.00</Text>
-          <Text style={styles.amountToken}>12,500 USDC</Text>
-        </View>
-
-        <View style={styles.divider} />
-
-        <Text style={styles.riskSectionTitle}>RISK BREAKDOWN</Text>
-        <RiskRow label="Contract Age" value={0.15} color={theme.red} />
-        <RiskRow label="Approval Amount" value={0.75} color={theme.amber} />
-        <RiskRow label="Token Category" value={0.9} color={theme.green} />
-        <RiskRow label="Behavior Pattern" value={0.3} color={theme.amber} />
-
-        <Text style={styles.riskScore}>Risk Score: 72 / 100</Text>
-      </Animated.View>
-
-      <View style={styles.actions}>
-        <TouchableOpacity style={styles.rejectBtn} activeOpacity={0.85}>
-          <Text style={styles.rejectBtnText}>REJECT</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.approveBtn} activeOpacity={0.85}>
-          <Text style={styles.approveBtnText}>APPROVE</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     flex: 1,
-    backgroundColor: theme.bg,
+    backgroundColor: 'rgba(245, 240, 232, 0.92)',
     justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  pulseContainer: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    marginLeft: -150,
-    marginTop: -150,
-    opacity: 0.3,
+    paddingHorizontal: T.s5,
   },
   modal: {
-    backgroundColor: theme.surface,
+    backgroundColor: T.bg,
     borderWidth: 1,
-    borderColor: theme.warning,
-    padding: spacing.xl,
+    borderColor: T.border,
+    padding: T.s6,
   },
-  warningHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-    gap: spacing.sm,
+  reviewLabel: {
+    fontFamily: T.fontBody,
+    fontSize: 9,
+    letterSpacing: 2,
+    color: T.inkMuted,
+    textAlign: 'center',
   },
-  warningIcon: {
-    fontSize: 18,
-    color: theme.warning,
-  },
-  warningTitle: {
-    fontFamily: theme.fontMonoBold,
+  contractAddress: {
+    fontFamily: T.fontMono,
     fontSize: 13,
-    color: theme.warning,
-    letterSpacing: 2,
+    color: T.inkMuted,
+    textAlign: 'center',
+    marginBottom: T.s4,
   },
-  addressSection: {
-    marginBottom: spacing.xl,
-  },
-  addressLabel: {
-    fontFamily: theme.fontBody,
-    fontSize: 9,
-    color: theme.muted,
-    letterSpacing: 2,
-    marginBottom: spacing.xs,
-  },
-  addressValue: {
-    fontFamily: theme.fontMonoBold,
-    fontSize: 22,
-    color: theme.text,
-    marginBottom: 2,
-  },
-  addressHint: {
-    fontFamily: theme.fontMono,
-    fontSize: 10,
-    color: theme.warning,
-  },
-  amountSection: {
-    marginBottom: spacing.xl,
-  },
-  amountLabel: {
-    fontFamily: theme.fontBody,
-    fontSize: 9,
-    color: theme.muted,
-    letterSpacing: 2,
-    marginBottom: spacing.xs,
-  },
-  amountValue: {
-    fontFamily: theme.fontMonoBold,
-    fontSize: 28,
-    color: theme.text,
-    marginBottom: 2,
-  },
-  amountToken: {
-    fontFamily: theme.fontMono,
-    fontSize: 12,
-    color: theme.textDim,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: theme.border,
-    marginBottom: spacing.lg,
-  },
-  riskSectionTitle: {
-    fontFamily: theme.fontBody,
-    fontSize: 9,
-    color: theme.muted,
-    letterSpacing: 2,
-    marginBottom: spacing.md,
-  },
-  riskRow: {
-    flexDirection: 'row',
+  riskSection: {
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: T.s5,
+  },
+  riskNumeral: {
+    fontFamily: T.fontDisplay,
+    fontSize: 64,
+    color: T.ink,
+    lineHeight: 68,
   },
   riskLabel: {
-    fontFamily: theme.fontMono,
-    fontSize: 10,
-    color: theme.textDim,
-    width: 120,
+    fontFamily: T.fontBody,
+    fontSize: 9,
+    letterSpacing: 2,
+    color: T.inkMuted,
   },
-  riskBarTrack: {
-    flex: 1,
-    height: 6,
-    backgroundColor: theme.border,
+  evidenceList: {
+    marginBottom: T.s6,
   },
-  riskBarFill: {
-    height: '100%',
+  evidenceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: T.s2,
+    borderBottomWidth: T.hairline,
+    borderBottomColor: T.border,
   },
-  riskScore: {
-    fontFamily: theme.fontMonoBold,
-    fontSize: 12,
-    color: theme.amber,
-    textAlign: 'right',
-    marginTop: spacing.md,
+  evidenceLabel: {
+    fontFamily: T.fontBody,
+    fontSize: 9,
+    letterSpacing: 1.5,
+    color: T.inkMuted,
+  },
+  evidenceValue: {
+    fontFamily: T.fontBody,
+    fontSize: 13,
+    color: T.ink,
   },
   actions: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.xl,
+    gap: 0,
   },
   rejectBtn: {
-    flex: 1.1,
-    backgroundColor: theme.warning,
-    paddingVertical: 18,
+    backgroundColor: T.danger,
+    paddingVertical: T.s4,
     alignItems: 'center',
   },
-  rejectBtnText: {
-    fontFamily: theme.fontMonoBold,
-    fontSize: 13,
-    color: theme.bg,
+  rejectText: {
+    fontFamily: T.fontBody,
+    fontSize: 12,
+    color: T.bg,
     letterSpacing: 2,
   },
+  actionDivider: {
+    height: T.hairline,
+    backgroundColor: T.border,
+  },
   approveBtn: {
-    flex: 0.9,
-    borderWidth: 1,
-    borderColor: theme.accent,
-    paddingVertical: 18,
+    paddingVertical: T.s4,
     alignItems: 'center',
   },
-  approveBtnText: {
-    fontFamily: theme.fontMonoBold,
-    fontSize: 13,
-    color: theme.accent,
+  approveText: {
+    fontFamily: T.fontBody,
+    fontSize: 12,
+    color: T.ink,
+    letterSpacing: 1,
+  },
+  verdictText: {
+    fontFamily: T.fontDisplay,
+    fontSize: 20,
+    color: T.ink,
+    textAlign: 'center',
+    marginTop: T.s3,
+  },
+  verdictSubtext: {
+    fontFamily: T.fontBody,
+    fontSize: 12,
+    color: T.inkMuted,
+    textAlign: 'center',
+    marginTop: T.s1,
+  },
+  dismissBtn: {
+    marginTop: T.s6,
+    paddingVertical: T.s3,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  dismissText: {
+    fontFamily: T.fontBody,
+    fontSize: 11,
+    color: T.ink,
     letterSpacing: 2,
   },
 });
