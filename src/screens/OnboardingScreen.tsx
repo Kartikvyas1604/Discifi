@@ -12,7 +12,6 @@ import Animated, {
   withTiming,
   withSequence,
   Easing,
-  FadeIn,
   FadeInUp,
 } from 'react-native-reanimated';
 import Svg, { Rect, Polygon, Circle, Path, G } from 'react-native-svg';
@@ -105,7 +104,7 @@ function DiamondIcon() {
 
   useEffect(() => {
     scale.value = withSequence(
-      withTiming(1.2, { duration: 600, easing: Easing.out(Easing.back) }),
+      withTiming(1.2, { duration: 600, easing: Easing.out(Easing.back(1.5) as any) }),
       withTiming(1, { duration: 200 }),
     );
     opacity.value = withTiming(1, { duration: 400 });
