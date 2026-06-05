@@ -5,10 +5,10 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Switch,
 } from 'react-native';
 import { T } from '../theme';
-import { AccentCard } from '../components/AccentCard';
-import { GoldToggle } from '../components/GoldToggle';
+import { ShieldIcon, PlusIcon } from '../components/Icons';
 
 interface Rule {
   id: string;
@@ -17,14 +17,15 @@ interface Rule {
   scope: string;
   active: boolean;
   lastTriggered: string;
+  description: string;
 }
 
 const MOCK_RULES: Rule[] = [
-  { id: '1', type: 'DAILY LIMIT', value: '$800', scope: 'All categories', active: true, lastTriggered: '2d ago' },
-  { id: '2', type: 'MAX PER TX', value: '$250', scope: 'All tokens', active: true, lastTriggered: '5d ago' },
-  { id: '3', type: 'ALLOWLIST', value: '8 contracts', scope: 'DeFi only', active: true, lastTriggered: 'Never' },
-  { id: '4', type: 'MIN HOLD', value: '24 hours', scope: 'New positions', active: false, lastTriggered: '—' },
-  { id: '5', type: 'AUTO-SAVE', value: '15%', scope: 'Incoming transfers', active: true, lastTriggered: '1h ago' },
+  { id: '1', type: 'Daily Limit', value: '$800', scope: 'All categories', active: true, lastTriggered: '2d ago', description: 'Max spend per day across all protocols' },
+  { id: '2', type: 'Max Per Tx', value: '$250', scope: 'All tokens', active: true, lastTriggered: '5d ago', description: 'Single transaction cap' },
+  { id: '3', type: 'Allowlist', value: '8 contracts', scope: 'DeFi only', active: true, lastTriggered: 'Never', description: 'Only pre-approved contracts' },
+  { id: '4', type: 'Min Hold', value: '24 hours', scope: 'New positions', active: false, lastTriggered: '—', description: 'Minimum hold time before selling' },
+  { id: '5', type: 'Auto-Save', value: '15%', scope: 'Incoming transfers', active: true, lastTriggered: '1h ago', description: 'Auto-convert incoming to USDC' },
 ];
 
 export default function RulesScreen() {
@@ -36,43 +37,85 @@ export default function RulesScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>YOUR COVENANTS</Text>
-        <Text style={styles.subtitle}>{rules.filter(r => r.active).length} ACTIVE</Text>
-      </View>
-
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       >
-        {rules.map((rule, i) => (
-          <AccentCard
-            key={rule.id}
-            accentColor={rule.active ? T.gold : T.border}
-            style={[
-              styles.ruleCard,
-            ]}
-          >
-            <View style={styles.ruleTop}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.ruleType}>{rule.type}</Text>
-                <Text style={styles.ruleValue}>{rule.value}</Text>
-                <Text style={styles.ruleScope}>{rule.scope}</Text>
-              </View>
-              <GoldToggle active={rule.active} onToggle={() => toggleRule(rule.id)} />
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <View style={styles.headerIcon}>
+              <ShieldIcon size={22} color={T.accentLight} />
             </View>
-            <View style={styles.ruleDivider} />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={styles.ruleMeta}>Last triggered</Text>
-              <Text style={styles.ruleMetaValue}>{rule.lastTriggered}</Text>
-            </View>
-          </AccentCard>
-        ))}
+            <Text style={styles.title}>Covenants</Text>
+          </View>
+          <Text style={styles.subtitle}>
+            {rules.filter(r => r.active).length} of {rules.length} rules active
+          </Text>
+        </View>
 
-        <TouchableOpacity style={styles.addCard} activeOpacity={0.7}>
-          <Text style={styles.addGlyph}>+</Text>
-          <Text style={styles.addText}>NEW COVENANT</Text>
+        {/* Summary Card */}
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryValue}>$800</Text>
+              <Text style={styles.summaryLabel}>Daily Limit</Text>
+            </View>
+            <View style={styles.summaryDivider} />
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryValue}>15%</Text>
+              <Text style={styles.summaryLabel}>Auto-Save</Text>
+            </View>
+            <View style={styles.summaryDivider} />
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryValue}>8</Text>
+              <Text style={styles.summaryLabel}>Allowlisted</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Rules List */}
+        <View style={styles.rulesSection}>
+          {rules.map((rule) => (
+            <View
+              key={rule.id}
+              style={[styles.ruleCard, !rule.active && styles.ruleCardInactive]}
+            >
+              <View style={styles.ruleTop}>
+                <View style={styles.ruleInfo}>
+                  <Text style={[styles.ruleType, !rule.active && { color: T.inkFaint }]}>
+                    {rule.type}
+                  </Text>
+                  <Text style={[styles.ruleValue, !rule.active && { color: T.inkFaint }]}>
+                    {rule.value}
+                  </Text>
+                  <Text style={styles.ruleDesc}>{rule.description}</Text>
+                </View>
+                <View style={styles.toggleSection}>
+                  <Text style={styles.ruleScope}>{rule.scope}</Text>
+                  <Switch
+                    value={rule.active}
+                    onValueChange={() => toggleRule(rule.id)}
+                    trackColor={{ false: T.surfaceElevated, true: T.accent + '60' }}
+                    thumbColor={rule.active ? T.accent : T.inkFaint}
+                  />
+                </View>
+              </View>
+              <View style={styles.ruleBottom}>
+                <Text style={styles.ruleMeta}>Last triggered</Text>
+                <Text style={[styles.ruleMetaValue, !rule.active && { color: T.inkFaint }]}>
+                  {rule.lastTriggered}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* Add Rule Button */}
+        <TouchableOpacity style={styles.addBtn} activeOpacity={0.8}>
+          <PlusIcon size={18} color={T.accent} />
+          <Text style={styles.addText}>New Covenant</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -86,83 +129,154 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: T.s4,
-    paddingTop: 60,
+    paddingTop: 56,
     marginBottom: T.s5,
   },
-  title: {
-    fontFamily: T.fontDisplay,
-    fontSize: 28,
-    color: T.ink,
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: T.s3,
     marginBottom: T.s1,
   },
+  headerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: T.radiusFull,
+    backgroundColor: T.accent + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    fontFamily: T.fontBold,
+    fontSize: 28,
+    color: T.ink,
+    letterSpacing: -0.5,
+  },
   subtitle: {
-    fontFamily: T.fontMono,
+    fontFamily: T.fontFamily,
+    fontSize: 14,
+    color: T.inkMuted,
+    marginLeft: 44,
+  },
+  summaryCard: {
+    marginHorizontal: T.s4,
+    backgroundColor: T.surface,
+    borderRadius: T.radius,
+    padding: T.s4,
+    marginBottom: T.s5,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  summaryItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  summaryDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: T.border,
+  },
+  summaryValue: {
+    fontFamily: T.fontBold,
+    fontSize: 22,
+    color: T.ink,
+    letterSpacing: -0.5,
+  },
+  summaryLabel: {
+    fontFamily: T.fontFamily,
     fontSize: 11,
-    color: T.gold,
-    letterSpacing: 1,
+    color: T.inkMuted,
+    marginTop: 2,
+  },
+  rulesSection: {
+    paddingHorizontal: T.s4,
+    gap: T.s3,
   },
   ruleCard: {
-    marginHorizontal: T.s4,
-    marginBottom: T.s3,
+    backgroundColor: T.surface,
+    borderRadius: T.radius,
+    padding: T.s4,
+    borderWidth: 1,
+    borderColor: T.accent + '20',
+  },
+  ruleCardInactive: {
+    borderColor: T.border,
+    opacity: 0.7,
   },
   ruleTop: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  ruleInfo: {
+    flex: 1,
+    marginRight: T.s3,
   },
   ruleType: {
-    fontFamily: T.fontBody,
-    fontSize: 9,
-    letterSpacing: 2,
-    color: T.inkMuted,
+    fontFamily: T.fontFamily,
+    fontSize: 11,
+    color: T.accent,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: 2,
   },
   ruleValue: {
-    fontFamily: T.fontFigures,
-    fontSize: 32,
+    fontFamily: T.fontBold,
+    fontSize: 28,
     color: T.ink,
-    lineHeight: 36,
+    letterSpacing: -0.5,
     marginBottom: 2,
   },
-  ruleScope: {
-    fontFamily: T.fontBody,
-    fontSize: 11,
+  ruleDesc: {
+    fontFamily: T.fontFamily,
+    fontSize: 12,
     color: T.inkMuted,
   },
-  ruleDivider: {
-    height: T.hairline,
-    backgroundColor: T.border,
-    marginVertical: T.s2,
-  },
-  ruleMeta: {
-    fontFamily: T.fontMono,
-    fontSize: 10,
-    color: T.inkFaint,
-  },
-  ruleMetaValue: {
-    fontFamily: T.fontMono,
-    fontSize: 10,
-    color: T.inkMuted,
-  },
-  addCard: {
-    marginHorizontal: T.s4,
-    borderWidth: 1,
-    borderColor: T.border,
-    borderStyle: 'dashed',
-    padding: T.s5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
+  toggleSection: {
+    alignItems: 'flex-end',
     gap: T.s2,
   },
-  addGlyph: {
-    fontFamily: T.fontBody,
-    fontSize: 16,
-    color: T.gold,
+  ruleScope: {
+    fontFamily: T.fontFamily,
+    fontSize: 11,
+    color: T.inkMuted,
+  },
+  ruleBottom: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: T.s3,
+    paddingTop: T.s2,
+    borderTopWidth: T.hairline,
+    borderTopColor: T.border,
+  },
+  ruleMeta: {
+    fontFamily: T.fontFamily,
+    fontSize: 12,
+    color: T.inkMuted,
+  },
+  ruleMetaValue: {
+    fontFamily: T.fontSemiBold,
+    fontSize: 12,
+    color: T.ink,
+  },
+  addBtn: {
+    marginHorizontal: T.s4,
+    marginTop: T.s4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: T.s2,
+    paddingVertical: T.s4,
+    borderRadius: T.radius,
+    borderWidth: 1,
+    borderColor: T.accent + '40',
+    borderStyle: 'dashed',
   },
   addText: {
-    fontFamily: T.fontBody,
-    fontSize: 11,
-    letterSpacing: 2,
-    color: T.gold,
+    fontFamily: T.fontSemiBold,
+    fontSize: 14,
+    color: T.accent,
   },
 });

@@ -6,10 +6,11 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { T, formatCurrency } from '../theme';
+import { VaultIcon, PercentIcon, ArrowUpIcon, HistoryIcon } from '../components/Icons';
 
-function Sparkline({ data, width = 300, height = 64 }: { data: number[]; width?: number; height?: number }) {
+function Sparkline({ data, width = 300, height = 80 }: { data: number[]; width?: number; height?: number }) {
   const path = useMemo(() => {
     if (data.length < 2) return '';
     const max = Math.max(...data);
@@ -19,27 +20,30 @@ function Sparkline({ data, width = 300, height = 64 }: { data: number[]; width?:
 
     const points = data.map((v, i) => ({
       x: i * stepX,
-      y: height - ((v - min) / range) * (height - 8) - 4,
+      y: height - ((v - min) / range) * (height - 16) - 8,
     }));
 
-    const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+    const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+    const area = line + ` L ${points[points.length - 1].x} ${height} L ${points[0].x} ${height} Z`;
 
-    const area = d + ` L ${points[points.length - 1].x} ${height} L ${points[0].x} ${height} Z`;
-
-    return { line: d, area };
+    return { line, area };
   }, [data, width, height]);
 
   return (
-    <View style={{ alignItems: 'center', marginVertical: T.s4 }}>
-      <Svg width={width} height={height}>
-        {path && (
-          <>
-            <Path d={path.area} fill={T.gold} opacity={0.06} />
-            <Path d={path.line} stroke={T.gold} strokeWidth={1.5} fill="none" />
-          </>
-        )}
-      </Svg>
-    </View>
+    <Svg width={width} height={height}>
+      <Defs>
+        <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={T.accent} stopOpacity="0.3" />
+          <Stop offset="1" stopColor={T.accent} stopOpacity="0" />
+        </LinearGradient>
+      </Defs>
+      {path && (
+        <>
+          <Path d={path.area} fill="url(#grad)" />
+          <Path d={path.line} stroke={T.accent} strokeWidth={2} fill="none" />
+        </>
+      )}
+    </Svg>
   );
 }
 
@@ -49,55 +53,88 @@ const mockSparklineData = Array.from({ length: 60 }, (_, i) =>
 
 export default function VaultScreen() {
   const [balance] = useState(4218.50);
+  const [monthlySave] = useState(1240);
+  const [streak] = useState(23);
 
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{ paddingBottom: 100, alignItems: 'center' }}
+      contentContainerStyle={{ paddingBottom: 120 }}
+      showsVerticalScrollIndicator={false}
     >
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerLabel}>~/reserve</Text>
+        <View style={styles.headerTop}>
+          <View style={styles.headerIcon}>
+            <VaultIcon size={22} color={T.accentLight} />
+          </View>
+          <Text style={styles.title}>Reserve</Text>
+        </View>
+        <Text style={styles.subtitle}>Your savings vault</Text>
       </View>
 
-      <Text style={styles.title}>THE RESERVE</Text>
+      {/* Balance Card */}
+      <View style={styles.balanceCard}>
+        <View style={styles.balanceGlow} />
+        <Text style={styles.balanceLabel}>Vault Balance</Text>
+        <Text style={styles.balanceValue}>${formatCurrency(balance)}</Text>
+        <View style={styles.balanceRow}>
+          <View style={styles.changeBadge}>
+            <ArrowUpIcon size={12} color={T.safe} />
+            <Text style={styles.changeText}>+$247 today</Text>
+          </View>
+          <Text style={styles.denom}>USDC</Text>
+        </View>
+      </View>
 
-      <View style={styles.titleRule} />
-
-      <Text style={styles.balance}>${formatCurrency(balance)}</Text>
-      <Text style={styles.denomination}>USDC</Text>
-
+      {/* Auto-Save Card */}
       <View style={styles.autoSaveCard}>
         <View style={styles.autoSaveHeader}>
-          <Text style={styles.autoSaveLabel}>AUTO-COVENANT</Text>
+          <View style={styles.autoSaveIcon}>
+            <PercentIcon size={18} color={T.safe} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.autoSaveTitle}>Auto-Covenant</Text>
+            <Text style={styles.autoSaveDesc}>15% of all incoming → USDC</Text>
+          </View>
           <Text style={styles.autoSavePct}>15%</Text>
         </View>
-        <Text style={styles.autoSaveDesc}>of all incoming → USDC</Text>
         <View style={styles.autoSaveDivider} />
-        <Text style={styles.autoSaveTrigger}>Next trigger: on deposit</Text>
+        <View style={styles.autoSaveFooter}>
+          <HistoryIcon size={14} color={T.inkMuted} />
+          <Text style={styles.autoSaveTrigger}>Next trigger: on next deposit</Text>
+        </View>
       </View>
 
+      {/* Chart */}
       <View style={styles.chartSection}>
-        <Text style={styles.chartLabel}>60-DAY HISTORY</Text>
-        <Sparkline data={mockSparklineData} width={280} height={64} />
+        <View style={styles.chartHeader}>
+          <Text style={styles.chartTitle}>60-Day History</Text>
+        </View>
+        <View style={styles.chartContainer}>
+          <Sparkline data={mockSparklineData} width={280} height={80} />
+        </View>
       </View>
 
+      {/* Stats */}
       <View style={styles.statsRow}>
         <View style={styles.statBox}>
-          <Text style={styles.statLabel}>MONTH</Text>
-          <Text style={styles.statValue}>$1,240</Text>
+          <Text style={styles.statValue}>${formatCurrency(monthlySave)}</Text>
+          <Text style={styles.statLabel}>This Month</Text>
         </View>
         <View style={styles.statBox}>
-          <Text style={styles.statLabel}>AVG/DAY</Text>
           <Text style={styles.statValue}>$41.33</Text>
+          <Text style={styles.statLabel}>Avg / Day</Text>
         </View>
         <View style={styles.statBox}>
-          <Text style={styles.statLabel}>STREAK</Text>
-          <Text style={styles.statValue}>23d</Text>
+          <Text style={styles.statValue}>{streak}d</Text>
+          <Text style={styles.statLabel}>Streak</Text>
         </View>
       </View>
 
-      <TouchableOpacity style={styles.withdrawBtn} activeOpacity={0.7}>
-        <Text style={styles.withdrawText}>WITHDRAW</Text>
+      {/* Withdraw Button */}
+      <TouchableOpacity style={styles.withdrawBtn} activeOpacity={0.8}>
+        <Text style={styles.withdrawText}>Withdraw</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -109,135 +146,205 @@ const styles = StyleSheet.create({
     backgroundColor: T.bg,
   },
   header: {
-    width: '100%',
     paddingHorizontal: T.s4,
-    paddingTop: 60,
-    marginBottom: T.s2,
+    paddingTop: 56,
+    marginBottom: T.s5,
   },
-  headerLabel: {
-    fontFamily: T.fontMono,
-    fontSize: 11,
-    color: T.gold,
-    letterSpacing: 0.5,
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: T.s3,
+    marginBottom: T.s1,
+  },
+  headerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: T.radiusFull,
+    backgroundColor: T.accent + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
-    fontFamily: T.fontDisplay,
-    fontSize: 32,
+    fontFamily: T.fontBold,
+    fontSize: 28,
     color: T.ink,
-    textAlign: 'center',
-    marginBottom: T.s2,
+    letterSpacing: -0.5,
   },
-  titleRule: {
-    width: 40,
-    height: 1,
-    backgroundColor: T.gold,
-    marginBottom: T.s5,
+  subtitle: {
+    fontFamily: T.fontFamily,
+    fontSize: 14,
+    color: T.inkMuted,
+    marginLeft: 44,
   },
-  balance: {
-    fontFamily: T.fontFigures,
-    fontSize: 64,
+  balanceCard: {
+    marginHorizontal: T.s4,
+    padding: T.s5,
+    borderRadius: T.radius,
+    backgroundColor: T.surface,
+    position: 'relative',
+    overflow: 'hidden',
+    marginBottom: T.s4,
+  },
+  balanceGlow: {
+    position: 'absolute',
+    top: -40,
+    right: -30,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: T.accent,
+    opacity: 0.06,
+  },
+  balanceLabel: {
+    fontFamily: T.fontFamily,
+    fontSize: 13,
+    color: T.inkMuted,
+    marginBottom: T.s1,
+  },
+  balanceValue: {
+    fontFamily: T.fontBold,
+    fontSize: 44,
     color: T.ink,
-    textAlign: 'center',
-    lineHeight: 68,
+    letterSpacing: -1,
   },
-  denomination: {
-    fontFamily: T.fontBody,
-    fontSize: 11,
-    letterSpacing: 2,
-    color: T.gold,
-    textAlign: 'center',
-    marginBottom: T.s6,
+  balanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: T.s2,
+    marginTop: T.s2,
+  },
+  changeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: T.safe + '20',
+    paddingHorizontal: T.s2,
+    paddingVertical: 2,
+    borderRadius: T.radiusFull,
+  },
+  changeText: {
+    fontFamily: T.fontSemiBold,
+    fontSize: 12,
+    color: T.safe,
+  },
+  denom: {
+    fontFamily: T.fontSemiBold,
+    fontSize: 12,
+    color: T.inkMuted,
   },
   autoSaveCard: {
-    width: '85%',
-    borderWidth: T.hairline,
-    borderColor: T.border,
+    marginHorizontal: T.s4,
+    backgroundColor: T.surface,
+    borderRadius: T.radius,
     padding: T.s4,
     marginBottom: T.s5,
+    borderWidth: 1,
+    borderColor: T.safe + '20',
   },
   autoSaveHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: T.s1,
+    gap: T.s3,
   },
-  autoSaveLabel: {
-    fontFamily: T.fontBody,
-    fontSize: 9,
-    letterSpacing: 2,
-    color: T.inkMuted,
+  autoSaveIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: T.radiusFull,
+    backgroundColor: T.safe + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  autoSavePct: {
-    fontFamily: T.fontFigures,
-    fontSize: 18,
-    color: T.gold,
+  autoSaveTitle: {
+    fontFamily: T.fontSemiBold,
+    fontSize: 15,
+    color: T.ink,
   },
   autoSaveDesc: {
-    fontFamily: T.fontBody,
-    fontSize: 13,
-    color: T.ink,
-    marginBottom: T.s2,
+    fontFamily: T.fontFamily,
+    fontSize: 12,
+    color: T.inkMuted,
+    marginTop: 1,
+  },
+  autoSavePct: {
+    fontFamily: T.fontBold,
+    fontSize: 24,
+    color: T.safe,
+    letterSpacing: -0.5,
   },
   autoSaveDivider: {
     height: T.hairline,
     backgroundColor: T.border,
-    marginBottom: T.s2,
+    marginVertical: T.s3,
+  },
+  autoSaveFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: T.s2,
   },
   autoSaveTrigger: {
-    fontFamily: T.fontMono,
-    fontSize: 10,
+    fontFamily: T.fontFamily,
+    fontSize: 12,
     color: T.inkMuted,
   },
   chartSection: {
-    width: '100%',
-    paddingHorizontal: T.s4,
-    marginBottom: T.s5,
+    marginHorizontal: T.s4,
+    backgroundColor: T.surface,
+    borderRadius: T.radius,
+    padding: T.s4,
+    marginBottom: T.s4,
   },
-  chartLabel: {
-    fontFamily: T.fontBody,
-    fontSize: 9,
-    letterSpacing: 2,
-    color: T.inkMuted,
-    textAlign: 'center',
+  chartHeader: {
     marginBottom: T.s2,
+  },
+  chartTitle: {
+    fontFamily: T.fontSemiBold,
+    fontSize: 14,
+    color: T.ink,
+  },
+  chartContainer: {
+    alignItems: 'center',
   },
   statsRow: {
     flexDirection: 'row',
-    gap: T.s2,
+    gap: T.s3,
     paddingHorizontal: T.s4,
-    marginBottom: T.s6,
+    marginBottom: T.s5,
   },
   statBox: {
     flex: 1,
     backgroundColor: T.surface,
-    borderWidth: T.hairline,
-    borderColor: T.border,
+    borderRadius: T.radius,
     padding: T.s3,
     alignItems: 'center',
   },
-  statLabel: {
-    fontFamily: T.fontBody,
-    fontSize: 8,
-    letterSpacing: 1.5,
-    color: T.inkMuted,
-    marginBottom: 2,
-  },
   statValue: {
-    fontFamily: T.fontBody,
-    fontSize: 14,
+    fontFamily: T.fontBold,
+    fontSize: 18,
     color: T.ink,
+    letterSpacing: -0.5,
+  },
+  statLabel: {
+    fontFamily: T.fontFamily,
+    fontSize: 11,
+    color: T.inkMuted,
+    marginTop: 2,
   },
   withdrawBtn: {
-    width: '85%',
-    borderWidth: 1,
-    borderColor: T.ink,
+    marginHorizontal: T.s4,
+    backgroundColor: T.accent,
     paddingVertical: T.s4,
+    borderRadius: T.radius,
     alignItems: 'center',
+    shadowColor: T.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   withdrawText: {
-    fontFamily: T.fontBody,
-    fontSize: 12,
+    fontFamily: T.fontSemiBold,
+    fontSize: 16,
     color: T.ink,
-    letterSpacing: 2,
+    letterSpacing: 0.5,
   },
 });

@@ -1,55 +1,43 @@
 import { StyleSheet } from 'react-native';
 
 export const T = {
-  bg: '#F5F0E8',
-  surface: '#EDE8DE',
-  surfaceDeep: '#E2DDD3',
-  ink: '#1A1814',
-  inkMuted: '#7A7368',
-  inkFaint: '#B8B0A4',
-  gold: '#B8960C',
-  goldLight: '#D4AF3A',
-  danger: '#8B2E2E',
-  safe: '#2E5C3E',
-  border: '#D4CFC6',
+  bg: '#0A0A0B',
+  surface: '#1C1C1E',
+  surfaceElevated: '#2C2C2E',
+  ink: '#FFFFFF',
+  inkMuted: '#8E8E93',
+  inkFaint: '#48484A',
+  accent: '#7C3AED',
+  accentLight: '#A78BFA',
+  accentDark: '#5B21B6',
+  danger: '#FF453A',
+  safe: '#30D158',
+  warning: '#FFD60A',
+  border: '#38383A',
+  borderSubtle: '#242426',
 
-  fontDisplay: 'PlayfairDisplay_400Regular',
-  fontDisplayItalic: 'PlayfairDisplay_400Regular_Italic',
-  fontDisplayBold: 'PlayfairDisplay_700Bold',
-  fontDisplayBoldItalic: 'PlayfairDisplay_700Bold_Italic',
-  fontFigures: 'CormorantGaramond_400Regular_Italic',
-  fontFiguresBold: 'CormorantGaramond_700Bold_Italic',
-  fontBody: 'LibreBaskerville_400Regular',
-  fontBodyBold: 'LibreBaskerville_700Bold',
-  fontBodyItalic: 'LibreBaskerville_400Regular_Italic',
-  fontMono: 'CourierPrime_400Regular',
-  fontMonoBold: 'CourierPrime_700Bold',
+  fontFamily: 'Inter_400Regular',
+  fontSemiBold: 'Inter_600SemiBold',
+  fontBold: 'Inter_700Bold',
+  fontMedium: 'Inter_500Medium',
+  fontLight: 'Inter_300Light',
 
   s1: 4, s2: 8, s3: 12, s4: 16, s5: 24, s6: 32, s7: 48, s8: 64,
 
-  radius: 4,
-  radiusNone: 0,
+  radius: 12,
+  radiusSm: 8,
+  radiusFull: 9999,
   hairline: StyleSheet.hairlineWidth,
-  accentBar: 3,
 } as const;
 
 export type Theme = typeof T;
 
-export function toRoman(n: number): string {
-  const map: [number, string][] = [
-    [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I'],
-  ];
-  let result = '';
-  let remaining = n;
-  for (const [val, sym] of map) {
-    while (remaining >= val) {
-      result += sym;
-      remaining -= val;
-    }
-  }
-  return result || 'I';
-}
-
 export function formatCurrency(n: number): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+export function formatCompact(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(2) + 'K';
+  return n.toFixed(2);
 }
