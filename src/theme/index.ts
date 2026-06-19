@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 export const T = {
   bg: '#0A0A0B',
@@ -21,10 +21,12 @@ export const T = {
   fontBold: 'Inter_700Bold',
   fontMedium: 'Inter_500Medium',
   fontLight: 'Inter_300Light',
+  fontMono: Platform.select({ ios: 'Menlo', default: 'monospace' }),
 
   s1: 4, s2: 8, s3: 12, s4: 16, s5: 24, s6: 32, s7: 48, s8: 64,
 
   radius: 12,
+  radiusSmall: 8,
   radiusSm: 8,
   radiusFull: 9999,
   hairline: StyleSheet.hairlineWidth,
