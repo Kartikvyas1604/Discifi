@@ -1,0 +1,20 @@
+export const typescriptConfig = {
+  compilerOptions: {
+    target: 'ES2022',
+    module: 'NodeNext',
+    moduleResolution: 'NodeNext',
+    lib: ['ES2022'],
+    strict: true,
+    esModuleInterop: true,
+    skipLibCheck: true,
+    forceConsistentCasingInFileNames: true,
+    resolveJsonModule: true,
+    declaration: true,
+    declarationMap: true,
+    sourceMap: true,
+    noUncheckedIndexedAccess: true,
+    noImplicitReturns: true,
+    noFallthroughCasesInSwitch: true,
+    isolatedModules: true,
+  },
+};

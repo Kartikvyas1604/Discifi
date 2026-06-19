@@ -1,0 +1,30 @@
+{
+  "name": "@discifi/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./eslint": {
+      "import": "./dist/eslint.js",
+      "types": "./dist/eslint.d.ts"
+    },
+    "./typescript": {
+      "import": "./dist/typescript.js",
+      "types": "./dist/typescript.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/node": "^20.14.0"
+  }
+}
