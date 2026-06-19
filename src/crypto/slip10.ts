@@ -1,6 +1,6 @@
 import { hmac } from '@noble/hashes/sha256';
 import { sha512 } from '@noble/hashes/sha512';
-import type { DerivedKeypair } from './types';
+import * as nacl from 'tweetnacl';
 
 const HARDENED_OFFSET = 0x80000000;
 
@@ -107,7 +107,6 @@ export function derivePath(seed: Uint8Array, path: string): { key: Uint8Array; c
 }
 
 export function getPublicKey(privateKey: Uint8Array): Uint8Array {
-  const nacl = require('tweetnacl');
   const keypair = nacl.sign.keyPair.fromSeed(privateKey);
   return keypair.publicKey;
 }
