@@ -1,5 +1,5 @@
-import { hmac } from '@noble/hashes/sha256';
-import { sha512 } from '@noble/hashes/sha512';
+import { hmac } from '@noble/hashes/hmac.js';
+import { sha512 } from '@noble/hashes/sha2.js';
 import * as nacl from 'tweetnacl';
 
 const HARDENED_OFFSET = 0x80000000;
@@ -87,7 +87,7 @@ export function parseDerivationPath(path: string): number[] {
     }
 
     if (hardened) {
-      return num | HARDENED_OFFSET;
+      return num + HARDENED_OFFSET;
     }
     return num;
   });

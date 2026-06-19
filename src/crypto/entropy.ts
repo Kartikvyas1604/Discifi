@@ -9,7 +9,7 @@ export function mixEntropy(primary: Uint8Array, supplemental: Uint8Array): Uint8
   return result;
 }
 
-export async function collectMotionEntropy(sampleCount: number = 64): Promise<Uint8Array> {
+export function collectMotionEntropy(sampleCount: number = 64): Uint8Array {
   const entropy = new Uint8Array(sampleCount);
   for (let i = 0; i < sampleCount; i++) {
     const timestamp = performance.now();

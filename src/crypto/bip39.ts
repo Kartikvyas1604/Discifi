@@ -1,7 +1,7 @@
-import { wordlist } from '@scure/bip39/wordlists/english';
-import { sha256, hmac } from '@noble/hashes/sha256';
-import { sha512 } from '@noble/hashes/sha512';
-import { pbkdf2Async } from '@noble/hashes/pbkdf2';
+import { wordlist } from '@scure/bip39/wordlists/english.js';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { sha512 } from '@noble/hashes/sha2.js';
+import { pbkdf2Async } from '@noble/hashes/pbkdf2.js';
 
 export { wordlist };
 

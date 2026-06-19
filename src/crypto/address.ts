@@ -1,4 +1,4 @@
-import * as bs58 from 'bs58';
+import bs58 from 'bs58';
 import { derivePath, getPublicKey } from './slip10';
 import type { DerivedKeypair, WalletSet } from './types';
 
