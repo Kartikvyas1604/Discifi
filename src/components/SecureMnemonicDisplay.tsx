@@ -8,6 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import { T } from '../theme';
+import { useScreenCaptureProtection } from './useScreenCaptureProtection';
 
 const AUTO_HIDE_MS = 5 * 60 * 1000;
 
@@ -25,6 +26,7 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
 }
 
 export default function SecureMnemonicDisplay({ words, onTimeout }: Props) {
+  useScreenCaptureProtection(true);
   const [hidden, setHidden] = useState(false);
   const [timeLeft, setTimeLeft] = useState(AUTO_HIDE_MS);
 
@@ -49,7 +51,9 @@ export default function SecureMnemonicDisplay({ words, onTimeout }: Props) {
         setHidden(true);
       }
     });
-    return () => sub.remove();
+    return () => {
+      sub.remove();
+    };
   }, []);
 
   const resetTimer = useCallback(() => {
