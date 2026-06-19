@@ -1,0 +1,19 @@
+[package]
+name = "sentinel-stealth"
+version = "1.0.0"
+description = "Stealth address protocol for DisciFi Sentinel"
+edition = "2021"
+
+[lib]
+crate-type = ["lib", "cdylib"]
+
+[features]
+no-entrypoint = []
+no-idl = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = { version = "0.30.0", features = ["init-if-needed"] }
+anchor-spl = "0.30.0"
+solana-program = "~1.18.0"
