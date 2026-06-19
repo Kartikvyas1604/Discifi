@@ -1,6 +1,21 @@
 {
-  "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true
-  }
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "sourceMap": true,
+    "composite": true,
+    "noUncheckedIndexedAccess": true
+  },
+  "references": [
+    { "path": "packages/shared" },
+    { "path": "apps/backend" }
+  ],
+  "exclude": ["node_modules", "dist", ".turbo"]
 }
