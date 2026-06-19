@@ -15,6 +15,9 @@
   },
   "references": [
     { "path": "packages/shared" },
+    { "path": "packages/config" },
+    { "path": "packages/anchor-sdk" },
+    { "path": "packages/ui-tokens" },
     { "path": "apps/backend" }
   ],
   "exclude": ["node_modules", "dist", ".turbo"]
