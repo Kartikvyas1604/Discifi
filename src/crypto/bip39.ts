@@ -118,6 +118,20 @@ export async function generateMnemonic(strength: 128 | 256 = 256): Promise<{ ent
   return { entropy, mnemonic };
 }
 
+export function generateMnemonicFromEntropy(entropy: Uint8Array): string[] {
+  if (entropy.length !== 16 && entropy.length !== 32) {
+    throw new Error(`Invalid entropy length: ${entropy.length}. Must be 16 (128-bit) or 32 (256-bit).`);
+  }
+  const mnemonic = entropyToMnemonic(entropy);
+  const validation = validateMnemonic(mnemonic);
+  if (!validation.valid) {
+    throw new Error(`Mnemonic from entropy failed validation: ${validation.error}`);
+  }
+  return mnemonic;
+}
+
+
+
 export function clearBytes(data: Uint8Array): void {
   data.fill(0);
 }
