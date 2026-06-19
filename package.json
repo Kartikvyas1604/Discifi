@@ -23,5 +23,10 @@
     "node": ">=20.0.0",
     "pnpm": ">=9.0.0"
   },
-  "packageManager": "pnpm@9.15.0"
+  "packageManager": "pnpm@9.15.0",
+  "dependencies": {
+    "expo": "~56.0.8",
+    "react": "19.2.3",
+    "react-native": "0.85.3"
+  }
 }
