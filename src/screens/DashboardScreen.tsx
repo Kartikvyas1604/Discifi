@@ -7,6 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import * as Clipboard from 'expo-clipboard';
 import { T, formatCurrency, formatCompact } from '../theme';
 import { WalletIcon, ArrowUpIcon, ArrowDownIcon, HistoryIcon, MoreIcon, CopyIcon, SparklesIcon, DisciFiLogo } from '../components/Icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -56,12 +57,20 @@ export default function DashboardScreen() {
   const navigation = useNavigation<any>();
   const [totalValue] = useState(42850.75);
   const [change24h] = useState(3.2);
+  const address = '4f3c9a8b...b82a';
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyAddress = () => {
+    Clipboard.setStringAsync(address);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <View style={styles.container}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: T.s5 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
@@ -71,8 +80,10 @@ export default function DashboardScreen() {
             <View>
               <Text style={styles.greeting}>Good morning</Text>
               <View style={styles.addressRow}>
-                <Text style={styles.address}>0x4f3c...b82a</Text>
-                <CopyIcon size={12} color={T.inkMuted} />
+                <Text style={styles.address}>{address}</Text>
+                <TouchableOpacity onPress={handleCopyAddress} activeOpacity={0.7}>
+                  {copied ? <Text style={styles.copiedBadge}>✓</Text> : <CopyIcon size={12} color={T.inkMuted} />}
+                </TouchableOpacity>
               </View>
             </View>
           </TouchableOpacity>
@@ -220,7 +231,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: T.s4,
     paddingTop: 56,
-    paddingBottom: T.s5,
+    paddingBottom: T.s4,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -249,6 +260,11 @@ const styles = StyleSheet.create({
     fontFamily: T.fontFamily,
     fontSize: 12,
     color: T.inkMuted,
+  },
+  copiedBadge: {
+    fontFamily: T.fontBold,
+    fontSize: 12,
+    color: T.safe,
   },
   profileBtn: {
     width: 36,
@@ -297,11 +313,11 @@ const styles = StyleSheet.create({
   changeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: T.s1,
     backgroundColor: '#166534',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: T.s2,
+    paddingVertical: T.s1,
+    borderRadius: T.radius,
   },
   changeText: {
     fontFamily: T.fontSemiBold,
@@ -338,7 +354,7 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: T.s4,
-    marginTop: T.s3,
+    marginBottom: T.s5,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -435,7 +451,7 @@ const styles = StyleSheet.create({
     fontFamily: T.fontFamily,
     fontSize: 11,
     color: T.inkMuted,
-    marginTop: 1,
+    marginTop: T.s1,
   },
   txAmountCol: {
     alignItems: 'flex-end',
@@ -448,6 +464,6 @@ const styles = StyleSheet.create({
     fontFamily: T.fontFamily,
     fontSize: 11,
     color: T.inkMuted,
-    marginTop: 1,
+    marginTop: T.s1,
   },
 });

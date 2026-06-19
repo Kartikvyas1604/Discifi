@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: T.s1,
   },
   tabLabel: {
     fontFamily: T.fontFamily,
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: T.s4,
     paddingVertical: T.s2,
-    paddingBottom: 28,
+    paddingBottom: T.s5,
     borderTopWidth: T.hairline,
     borderTopColor: T.border,
   },

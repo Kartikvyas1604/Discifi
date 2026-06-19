@@ -298,7 +298,7 @@ const stepStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: T.s2,
-    paddingTop: T.s7 + 20,
+    paddingTop: T.s7 + T.s4,
     paddingBottom: T.s5,
   },
   dot: {
@@ -423,7 +423,7 @@ const stepStyles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: T.s3,
-    marginBottom: T.s6,
+    marginBottom: T.s5,
   },
   covenantCard: {
     width: (SCREEN_W - T.s4 * 2 - T.s3) / 2,
@@ -507,14 +507,14 @@ const stepStyles = StyleSheet.create({
     color: T.inkMuted,
     textAlign: 'center',
     marginTop: T.s1,
-    marginBottom: T.s6,
+    marginBottom: T.s5,
   },
   summaryCard: {
     backgroundColor: T.surface,
     borderRadius: T.radius,
     padding: T.s4,
     gap: T.s3,
-    marginBottom: T.s6,
+    marginBottom: T.s5,
     width: '100%',
   },
   summaryRow: {

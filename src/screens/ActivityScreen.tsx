@@ -95,7 +95,7 @@ export default function ActivityScreen({ navigation }: any) {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: T.s4, paddingBottom: 120 }}
+        contentContainerStyle={{ paddingHorizontal: T.s4, paddingBottom: T.s5 }}
         showsVerticalScrollIndicator={false}
       >
         {filtered.length === 0 ? (
@@ -224,8 +224,8 @@ const styles = StyleSheet.create({
     color: T.warning,
     backgroundColor: T.warning + '20',
     paddingHorizontal: T.s1,
-    paddingVertical: 1,
-    borderRadius: T.radiusSm - 4,
+    paddingVertical: T.s1,
+    borderRadius: T.s1,
     overflow: 'hidden',
   },
   failedBadge: {
@@ -234,15 +234,15 @@ const styles = StyleSheet.create({
     color: T.danger,
     backgroundColor: T.danger + '20',
     paddingHorizontal: T.s1,
-    paddingVertical: 1,
-    borderRadius: T.radiusSm - 4,
+    paddingVertical: T.s1,
+    borderRadius: T.s1,
     overflow: 'hidden',
   },
   txDate: {
     fontFamily: T.fontFamily,
     fontSize: 11,
     color: T.inkMuted,
-    marginTop: 2,
+    marginTop: T.s1,
   },
   txAmountCol: {
     alignItems: 'flex-end',
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     fontFamily: T.fontFamily,
     fontSize: 11,
     color: T.inkMuted,
-    marginTop: 1,
+    marginTop: T.s1,
   },
   approveLabel: {
     fontFamily: T.fontFamily,

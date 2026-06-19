@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   content: {
     padding: T.s4,
     gap: T.s2,
-    paddingBottom: 40,
+    paddingBottom: T.s5,
   },
   wordRow: {
     flexDirection: 'row',
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     color: T.inkMuted,
     width: 28,
     textAlign: 'right',
-    marginTop: 12,
+    marginTop: T.s3,
   },
   inputWrapper: {
     flex: 1,
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     backgroundColor: T.surface,
     borderRadius: T.radius,
     paddingHorizontal: T.s3,
-    paddingVertical: 10,
+    paddingVertical: T.s3,
     borderWidth: T.hairline,
     borderColor: T.border,
   },
@@ -158,13 +158,13 @@ const styles = StyleSheet.create({
     fontFamily: T.fontFamily,
     fontSize: 11,
     color: T.danger,
-    marginTop: 2,
+    marginTop: T.s1,
   },
   suggestions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: T.s1,
-    marginTop: 4,
+    marginTop: T.s1,
   },
   suggestion: {
     backgroundColor: T.surfaceElevated,

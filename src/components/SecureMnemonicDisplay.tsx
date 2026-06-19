@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     backgroundColor: T.surfaceElevated,
     borderRadius: T.radius,
     paddingHorizontal: T.s2,
-    paddingVertical: T.s1 + 2,
+    paddingVertical: T.s2,
     gap: T.s1,
     minWidth: 80,
   },

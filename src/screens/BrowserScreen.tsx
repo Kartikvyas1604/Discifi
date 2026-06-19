@@ -95,7 +95,7 @@ export default function BrowserScreen({ navigation }: any) {
       {/* DApp Grid */}
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: T.s4, paddingBottom: 120 }}
+        contentContainerStyle={{ paddingHorizontal: T.s4, paddingBottom: T.s5 }}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.dappGrid}>
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   },
   catRow: {
     maxHeight: 40,
-    marginBottom: T.s4,
+    marginBottom: T.s5,
   },
   catChip: {
     paddingHorizontal: T.s3,
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: T.s3,
-    marginBottom: T.s6,
+    marginBottom: T.s5,
   },
   dappCard: {
     width: CARD_W,
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     fontFamily: T.fontSemiBold,
     fontSize: 13,
     color: T.ink,
-    marginBottom: 2,
+    marginBottom: T.s1,
   },
   dappUrl: {
     fontFamily: T.fontFamily,
@@ -235,15 +235,15 @@ const styles = StyleSheet.create({
   },
   dappCategory: {
     paddingHorizontal: T.s2,
-    paddingVertical: 1,
-    borderRadius: T.radiusSm - 4,
+    paddingVertical: T.s1,
+    borderRadius: T.s1,
   },
   dappCategoryText: {
     fontFamily: T.fontFamily,
     fontSize: 9,
   },
   connectedSection: {
-    marginBottom: T.s6,
+    marginBottom: T.s5,
   },
   connectedTitle: {
     fontFamily: T.fontSemiBold,

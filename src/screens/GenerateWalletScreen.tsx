@@ -8,6 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { T } from '../theme';
 import SecureMnemonicDisplay from '../components/SecureMnemonicDisplay';
 import MnemonicInput from '../components/MnemonicInput';
@@ -32,6 +33,7 @@ export default function GenerateWalletScreen({ onComplete }: { onComplete: (wall
   const [entropy, setEntropy] = useState<Uint8Array | null>(null);
   const [wallets, setWallets] = useState<WalletSet | null>(null);
   const [loading, setLoading] = useState(false);
+  const [copiedAddr, setCopiedAddr] = useState<string | null>(null);
 
   const [verifyIndices] = useState(() => {
     const indices: number[] = [];
@@ -47,6 +49,19 @@ export default function GenerateWalletScreen({ onComplete }: { onComplete: (wall
 
   const [passphrase, setPassphrase] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [copiedSeed, setCopiedSeed] = useState(false);
+
+  const handleCopySeed = useCallback(() => {
+    Clipboard.setStringAsync(mnemonic.join(' '));
+    setCopiedSeed(true);
+    setTimeout(() => setCopiedSeed(false), 2000);
+  }, [mnemonic]);
+
+  const handleCopyAddress = useCallback((label: string, address: string) => {
+    Clipboard.setStringAsync(address);
+    setCopiedAddr(label);
+    setTimeout(() => setCopiedAddr(null), 2000);
+  }, []);
 
   const handleGenerate = useCallback(async () => {
     setLoading(true);
@@ -156,6 +171,15 @@ export default function GenerateWalletScreen({ onComplete }: { onComplete: (wall
           onTimeout={() => setStep('intro')}
         />
         <View style={styles.footer}>
+          <TouchableOpacity
+            style={styles.outlineBtn}
+            onPress={handleCopySeed}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.outlineBtnText}>
+              {copiedSeed ? '✓ Copied!' : 'Copy Seed Phrase'}
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.primaryBtn}
             onPress={() => setStep('verify')}
@@ -268,30 +292,27 @@ export default function GenerateWalletScreen({ onComplete }: { onComplete: (wall
             These addresses are derived from your seed phrase. Verify them on Solana Explorer.
           </Text>
 
-          <View style={styles.addressCard}>
-            <Text style={styles.addressLabel}>🔥 Hot Wallet</Text>
-            <Text style={styles.addressValue}>{wallets.hot.address}</Text>
-          </View>
-
-          <View style={styles.addressCard}>
-            <Text style={styles.addressLabel}>🏦 Vault Wallet</Text>
-            <Text style={styles.addressValue}>{wallets.vault.address}</Text>
-          </View>
-
-          <View style={styles.addressCard}>
-            <Text style={styles.addressLabel}>🗳️ DAO Wallet</Text>
-            <Text style={styles.addressValue}>{wallets.dao.address}</Text>
-          </View>
-
-          <View style={styles.addressCard}>
-            <Text style={styles.addressLabel}>🕵️ Stealth Spend</Text>
-            <Text style={styles.addressValue}>{wallets.stealthSpend.address}</Text>
-          </View>
-
-          <View style={styles.addressCard}>
-            <Text style={styles.addressLabel}>👁️ Stealth View</Text>
-            <Text style={styles.addressValue}>{wallets.stealthView.address}</Text>
-          </View>
+          {([
+            { label: '🔥 Hot Wallet', key: 'hot', addr: wallets.hot.address },
+            { label: '🏦 Vault Wallet', key: 'vault', addr: wallets.vault.address },
+            { label: '🗳️ DAO Wallet', key: 'dao', addr: wallets.dao.address },
+            { label: '🕵️ Stealth Spend', key: 'stealthSpend', addr: wallets.stealthSpend.address },
+            { label: '👁️ Stealth View', key: 'stealthView', addr: wallets.stealthView.address },
+          ] as const).map(({ label, key, addr }) => (
+            <View key={key} style={styles.addressCard}>
+              <View style={styles.addressHeader}>
+                <Text style={styles.addressLabel}>{label}</Text>
+                <TouchableOpacity onPress={() => handleCopyAddress(label, addr)} activeOpacity={0.7}>
+                  {copiedAddr === label ? (
+                    <Text style={styles.copiedAddrText}>✓ Copied</Text>
+                  ) : (
+                    <Text style={styles.copyAddrText}>Copy</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.addressValue}>{addr}</Text>
+            </View>
+          ))}
 
           <TouchableOpacity
             style={styles.primaryBtn}
@@ -316,11 +337,11 @@ const styles = StyleSheet.create({
   content: {
     padding: T.s4,
     gap: T.s4,
-    paddingBottom: 40,
+    paddingBottom: T.s5,
   },
   header: {
     padding: T.s4,
-    paddingBottom: T.s2,
+    paddingBottom: T.s4,
   },
   headerTitle: {
     fontFamily: T.fontBold,
@@ -395,9 +416,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: T.ink,
   },
+  outlineBtn: {
+    borderRadius: T.radius,
+    paddingVertical: T.s3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: T.accent + '40',
+  },
+  outlineBtnText: {
+    fontFamily: T.fontSemiBold,
+    fontSize: 14,
+    color: T.accent,
+  },
   footer: {
     padding: T.s4,
-    paddingBottom: 40,
+    paddingBottom: T.s5,
+    gap: T.s3,
   },
   verifyScroll: {
     flex: 1,
@@ -419,7 +454,7 @@ const styles = StyleSheet.create({
     backgroundColor: T.surface,
     borderRadius: T.radius,
     paddingHorizontal: T.s3,
-    paddingVertical: 10,
+    paddingVertical: T.s3,
     borderWidth: T.hairline,
     borderColor: T.border,
   },
@@ -454,11 +489,26 @@ const styles = StyleSheet.create({
     borderWidth: T.hairline,
     borderColor: T.border,
   },
+  addressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: T.s1,
+  },
   addressLabel: {
     fontFamily: T.fontSemiBold,
     fontSize: 13,
     color: T.inkMuted,
-    marginBottom: T.s1,
+  },
+  copyAddrText: {
+    fontFamily: T.fontSemiBold,
+    fontSize: 12,
+    color: T.accent,
+  },
+  copiedAddrText: {
+    fontFamily: T.fontSemiBold,
+    fontSize: 12,
+    color: T.safe,
   },
   addressValue: {
     fontFamily: T.fontMono,

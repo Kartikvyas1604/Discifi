@@ -39,7 +39,7 @@ export default function RulesScreen() {
     <View style={styles.container}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: T.s5 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     fontFamily: T.fontFamily,
     fontSize: 11,
     color: T.inkMuted,
-    marginTop: 2,
+    marginTop: T.s1,
   },
   rulesSection: {
     paddingHorizontal: T.s4,
@@ -219,14 +219,14 @@ const styles = StyleSheet.create({
     color: T.accent,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 2,
+    marginBottom: T.s1,
   },
   ruleValue: {
     fontFamily: T.fontBold,
     fontSize: 28,
     color: T.ink,
     letterSpacing: -0.5,
-    marginBottom: 2,
+    marginBottom: T.s1,
   },
   ruleDesc: {
     fontFamily: T.fontFamily,

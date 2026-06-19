@@ -59,7 +59,7 @@ export default function VaultScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{ paddingBottom: 120 }}
+      contentContainerStyle={{ paddingBottom: T.s5 }}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     backgroundColor: T.surface,
     position: 'relative',
     overflow: 'hidden',
-    marginBottom: T.s4,
+    marginBottom: T.s5,
   },
   balanceGlow: {
     position: 'absolute',
@@ -216,10 +216,10 @@ const styles = StyleSheet.create({
   changeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: T.s1,
     backgroundColor: T.safe + '20',
     paddingHorizontal: T.s2,
-    paddingVertical: 2,
+    paddingVertical: T.s1,
     borderRadius: T.radiusFull,
   },
   changeText: {
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     fontFamily: T.fontFamily,
     fontSize: 12,
     color: T.inkMuted,
-    marginTop: 1,
+    marginTop: T.s1,
   },
   autoSavePct: {
     fontFamily: T.fontBold,
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     backgroundColor: T.surface,
     borderRadius: T.radius,
     padding: T.s4,
-    marginBottom: T.s4,
+    marginBottom: T.s5,
   },
   chartHeader: {
     marginBottom: T.s2,
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
     fontFamily: T.fontFamily,
     fontSize: 11,
     color: T.inkMuted,
-    marginTop: 2,
+    marginTop: T.s1,
   },
   withdrawBtn: {
     marginHorizontal: T.s4,

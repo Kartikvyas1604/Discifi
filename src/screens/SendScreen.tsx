@@ -165,7 +165,7 @@ export default function SendScreen({ navigation }: any) {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: T.s4 }}
+        contentContainerStyle={{ paddingHorizontal: T.s4, paddingBottom: T.s5 }}
         keyboardShouldPersistTaps="handled"
       >
         {/* Recipient */}
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     fontFamily: T.fontFamily,
     fontSize: 12,
     color: T.inkMuted,
-    marginTop: 1,
+    marginTop: T.s1,
   },
   chevron: {
     fontSize: 22,
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
     paddingVertical: T.s4,
     borderRadius: T.radius,
     alignItems: 'center',
-    marginTop: T.s6,
+    marginTop: T.s4,
     shadowColor: T.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,

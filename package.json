@@ -40,6 +40,7 @@
     "@scure/bip39": "^2.2.0",
     "bs58": "^6.0.0",
     "expo": "~56.0.8",
+    "expo-clipboard": "~56.0.4",
     "expo-crypto": "^56.0.4",
     "expo-splash-screen": "~56.0.10",
     "expo-status-bar": "~56.0.4",

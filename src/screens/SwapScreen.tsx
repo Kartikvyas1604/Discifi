@@ -101,7 +101,7 @@ export default function SwapScreen({ navigation }: any) {
         <Text style={styles.headerTitle}>Select Token</Text>
         <View style={{ width: 24 }} />
       </View>
-      <ScrollView contentContainerStyle={{ padding: T.s4 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: T.s4, paddingBottom: T.s5 }}>
         {TOKENS.map((t) => (
           <TouchableOpacity
             key={t.symbol}
@@ -140,7 +140,7 @@ export default function SwapScreen({ navigation }: any) {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: T.s4 }}
+        contentContainerStyle={{ paddingHorizontal: T.s4, paddingBottom: T.s5 }}
         keyboardShouldPersistTaps="handled"
       >
         {/* From */}
@@ -228,7 +228,7 @@ const swapStyles = StyleSheet.create({
     backgroundColor: T.surface,
     borderRadius: T.radius,
     padding: T.s4,
-    marginBottom: T.s3,
+    marginBottom: T.s5,
   },
   tokenSection: {
     marginBottom: T.s2,

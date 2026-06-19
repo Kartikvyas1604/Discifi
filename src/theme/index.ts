@@ -24,6 +24,7 @@ export const T = {
   fontMono: Platform.select({ ios: 'Menlo', default: 'monospace' }),
 
   s1: 4, s2: 8, s3: 12, s4: 16, s5: 24, s6: 32, s7: 48, s8: 64,
+  s2_5: 20,
 
   radius: 12,
   radiusSmall: 8,

@@ -6,6 +6,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
+import * as Clipboard from 'expo-clipboard';
 import { T } from '../theme';
 import { CloseIcon, CopyIcon } from '../components/Icons';
 
@@ -41,6 +42,7 @@ export default function ReceiveScreen({ navigation }: any) {
   const address = '4f3c9a8b7c6d5e4f3c2b1a0d9e8f7c6b5a4f3c2b1a0d9e8f7c6b5a4f3c2b';
 
   const handleCopy = () => {
+    Clipboard.setStringAsync(address);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -118,7 +120,7 @@ const styles = StyleSheet.create({
   },
   qrContainer: {
     marginTop: T.s5,
-    marginBottom: T.s6,
+    marginBottom: T.s5,
   },
   qrCard: {
     backgroundColor: T.ink,
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
     borderRadius: T.radius,
     padding: T.s4,
     width: '100%',
-    marginBottom: T.s4,
+    marginBottom: T.s5,
   },
   addressText: {
     fontFamily: T.fontFamily,
@@ -154,7 +156,7 @@ const styles = StyleSheet.create({
     paddingVertical: T.s3,
     paddingHorizontal: T.s6,
     borderRadius: T.radius,
-    marginBottom: T.s6,
+    marginBottom: T.s5,
   },
   copyText: {
     fontFamily: T.fontSemiBold,

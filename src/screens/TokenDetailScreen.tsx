@@ -66,7 +66,7 @@ export default function TokenDetailScreen({ navigation, route }: any) {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: T.s5 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Price */}
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: T.s4,
     paddingTop: 56,
-    paddingBottom: T.s2,
+    paddingBottom: T.s4,
   },
   headerSymbol: {
     fontFamily: T.fontBold,
@@ -221,9 +221,9 @@ const styles = StyleSheet.create({
   changeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: T.s1,
     paddingHorizontal: T.s2,
-    paddingVertical: 2,
+    paddingVertical: T.s1,
     borderRadius: T.radiusFull,
   },
   changeText: {
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: T.s6,
     paddingVertical: T.s4,
-    marginBottom: T.s3,
+    marginBottom: T.s5,
   },
   tokenAction: {
     alignItems: 'center',
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     fontFamily: T.fontFamily,
     fontSize: 11,
     color: T.inkMuted,
-    marginTop: 1,
+    marginTop: T.s1,
   },
   txAmount: {
     fontFamily: T.fontSemiBold,
@@ -365,6 +365,6 @@ const styles = StyleSheet.create({
     fontFamily: T.fontFamily,
     fontSize: 11,
     color: T.inkMuted,
-    marginTop: 1,
+    marginTop: T.s1,
   },
 });

@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: T.surfaceElevated,
     alignSelf: 'center',
-    marginBottom: T.s4,
+    marginBottom: T.s5,
   },
   reviewHeader: {
     flexDirection: 'row',
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     backgroundColor: T.bg,
     borderRadius: T.radius,
     padding: T.s4,
-    marginBottom: T.s4,
+    marginBottom: T.s5,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    marginBottom: T.s4,
+    marginBottom: T.s5,
   },
   verdictText: {
     fontFamily: T.fontBold,
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     color: T.inkMuted,
     textAlign: 'center',
     marginTop: T.s1,
-    marginBottom: T.s6,
+    marginBottom: T.s5,
   },
   dismissBtn: {
     paddingVertical: T.s3,

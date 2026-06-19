@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { T } from '../theme';
 import { CloseIcon, ChevronLeftIcon, ShieldIcon, SparklesIcon, GlobeIcon, HistoryIcon, SettingsIcon, CopyIcon } from '../components/Icons';
 
@@ -21,6 +22,7 @@ export default function SettingsScreen({ navigation }: any) {
   const address = '4f3c9a8b...b82a';
 
   const handleCopy = () => {
+    Clipboard.setStringAsync(address);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -92,7 +94,7 @@ export default function SettingsScreen({ navigation }: any) {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: T.s4, paddingBottom: 120 }}
+        contentContainerStyle={{ paddingHorizontal: T.s4, paddingBottom: T.s5 }}
         showsVerticalScrollIndicator={false}
       >
         {sections.map((section, si) => (
@@ -182,10 +184,10 @@ const styles = StyleSheet.create({
     fontFamily: T.fontFamily,
     fontSize: 12,
     color: T.inkMuted,
-    marginTop: 1,
+    marginTop: T.s1,
   },
   section: {
-    marginBottom: T.s4,
+    marginBottom: T.s5,
   },
   sectionTitle: {
     fontFamily: T.fontSemiBold,

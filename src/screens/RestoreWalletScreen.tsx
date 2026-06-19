@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: T.s4,
-    paddingBottom: T.s2,
+    paddingBottom: T.s4,
   },
   headerTitle: {
     fontFamily: T.fontBold,
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: T.s4,
-    paddingBottom: 40,
+    paddingBottom: T.s5,
     gap: T.s3,
   },
   linkBtn: {
