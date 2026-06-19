@@ -10,8 +10,11 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { T } from '../theme';
-import { ShieldIcon, SparklesIcon, CheckIcon, DisciFiLogo } from '../components/Icons';
+import { ShieldIcon, CheckIcon, DisciFiLogo } from '../components/Icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import GenerateWalletScreen from './GenerateWalletScreen';
+import RestoreWalletScreen from './RestoreWalletScreen';
+import type { WalletSet } from '../crypto/types';
 
 function FadeInView({
   delay = 0,
@@ -211,29 +214,69 @@ function PercentIcon16() {
   );
 }
 
-export default function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
+export default function OnboardingScreen({ onComplete }: { onComplete: (wallets: WalletSet) => void }) {
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState<CovenantId | null>(null);
+  const [wallets, setWallets] = useState<WalletSet | null>(null);
 
   const handleNext = useCallback(() => {
-    if (step < 3) setStep(s => s + 1);
-    else onComplete();
-  }, [step, onComplete]);
+    if (step < 5) setStep(s => s + 1);
+  }, [step]);
+
+  const handleWalletCreated = useCallback((derived: WalletSet) => {
+    setWallets(derived);
+    setStep(3);
+  }, []);
+
+  const handleFinalComplete = useCallback(() => {
+    if (wallets) {
+      onComplete(wallets);
+    }
+  }, [wallets, onComplete]);
 
   return (
     <View style={styles.container}>
-      <StepIndicator current={step + 1} total={4} />
+      {(step === 0 || (step >= 3 && step <= 5)) && (
+        <StepIndicator current={step >= 3 ? step - 2 : step + 1} total={4} />
+      )}
 
       {step === 0 && <StepWelcome onNext={handleNext} />}
-      {step === 1 && (
+      {step === 1 && <StepWalletMethod onNext={() => setStep(2)} onRestore={() => setStep(6)} />}
+      {step === 2 && <GenerateWalletScreen onComplete={handleWalletCreated} />}
+      {step === 3 && (
         <StepChoose
           selected={selected}
           onSelect={setSelected}
           onNext={handleNext}
         />
       )}
-      {step === 2 && <StepSetLimit onNext={handleNext} />}
-      {step === 3 && <StepConfirm onComplete={onComplete} />}
+      {step === 4 && <StepSetLimit onNext={handleNext} />}
+      {step === 5 && <StepConfirm onComplete={handleFinalComplete} />}
+      {step === 6 && <RestoreWalletScreen onComplete={handleWalletCreated} />}
+    </View>
+  );
+}
+
+function StepWalletMethod({ onNext, onRestore }: { onNext: () => void; onRestore: () => void }) {
+  return (
+    <View style={[stepStyles.center, { paddingTop: T.s8 }]}>
+      <FadeInView duration={400}>
+        <DisciFiLogo size={48} />
+      </FadeInView>
+      <FadeInView delay={150} duration={400}>
+        <Text style={stepStyles.title}>Welcome to DisciFi</Text>
+        <Text style={stepStyles.tagline}>Your onchain financial discipline engine</Text>
+      </FadeInView>
+      <FadeInView delay={300} duration={400} style={{ width: '100%', paddingHorizontal: T.s4, gap: T.s3 }}>
+        <TouchableOpacity onPress={onNext} style={stepStyles.primaryBtn} activeOpacity={0.8}>
+          <Ionicons name="sparkles-outline" size={20} color={T.ink} style={{ marginRight: T.s2 }} />
+          <Text style={stepStyles.primaryBtnText}>Create New Wallet</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onRestore} style={stepStyles.secondaryBtn} activeOpacity={0.8}>
+          <Ionicons name="download-outline" size={20} color={T.accent} style={{ marginRight: T.s2 }} />
+          <Text style={stepStyles.secondaryBtnText}>Restore Existing Wallet</Text>
+        </TouchableOpacity>
+      </FadeInView>
     </View>
   );
 }
@@ -315,11 +358,13 @@ const stepStyles = StyleSheet.create({
     marginTop: T.s3,
   },
   primaryBtn: {
+    flexDirection: 'row',
     backgroundColor: T.accent,
     paddingVertical: T.s4,
     paddingHorizontal: T.s8,
     borderRadius: T.radius,
     alignItems: 'center',
+    justifyContent: 'center',
     minWidth: 200,
     shadowColor: T.accent,
     shadowOffset: { width: 0, height: 4 },
@@ -331,6 +376,24 @@ const stepStyles = StyleSheet.create({
     backgroundColor: T.surfaceElevated,
     shadowOpacity: 0,
     elevation: 0,
+  },
+  secondaryBtn: {
+    flexDirection: 'row',
+    backgroundColor: 'transparent',
+    paddingVertical: T.s4,
+    paddingHorizontal: T.s8,
+    borderRadius: T.radius,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 200,
+    borderWidth: 1,
+    borderColor: T.accent,
+  },
+  secondaryBtnText: {
+    fontFamily: T.fontSemiBold,
+    fontSize: 16,
+    color: T.accent,
+    letterSpacing: 0.3,
   },
   primaryBtnText: {
     fontFamily: T.fontSemiBold,

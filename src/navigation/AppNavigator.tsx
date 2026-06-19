@@ -17,6 +17,7 @@ import ActivityScreen from '../screens/ActivityScreen';
 import BrowserScreen from '../screens/BrowserScreen';
 import TokenDetailScreen from '../screens/TokenDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import type { WalletSet } from '../crypto/types';
 
 type TabParamList = {
   Ledger: undefined;
@@ -113,11 +114,17 @@ function MainTabs() {
 export default function AppNavigator() {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [showTxGate, setShowTxGate] = useState(false);
+  const [walletSet, setWalletSet] = useState<WalletSet | null>(null);
+
+  const handleOnboardingComplete = (wallets: WalletSet) => {
+    setWalletSet(wallets);
+    setShowOnboarding(false);
+  };
 
   return (
     <NavigationContainer>
       <Modal visible={showOnboarding} animationType="fade" onRequestClose={() => {}}>
-        <OnboardingScreen onComplete={() => setShowOnboarding(false)} />
+        <OnboardingScreen onComplete={handleOnboardingComplete} />
       </Modal>
       <TransactionGateScreen
         visible={showTxGate}
