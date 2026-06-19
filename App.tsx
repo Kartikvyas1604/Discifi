@@ -1,5 +1,9 @@
+import { enableScreens } from 'react-native-screens';
+enableScreens();
+
 import { useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import {
@@ -35,10 +39,12 @@ export default function App() {
   }
 
   return (
-    <View style={styles.root} onLayout={onLayoutRootView}>
-      <StatusBar style="light" />
-      <AppNavigator />
-    </View>
+    <SafeAreaProvider>
+      <View style={styles.root} onLayout={onLayoutRootView}>
+        <StatusBar style="light" />
+        <AppNavigator />
+      </View>
+    </SafeAreaProvider>
   );
 }
 

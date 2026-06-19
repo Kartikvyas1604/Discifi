@@ -14,11 +14,26 @@
     "noUncheckedIndexedAccess": true
   },
   "references": [
-    { "path": "packages/shared" },
-    { "path": "packages/config" },
-    { "path": "packages/anchor-sdk" },
-    { "path": "packages/ui-tokens" },
-    { "path": "apps/backend" }
+    {
+      "path": "packages/shared"
+    },
+    {
+      "path": "packages/config"
+    },
+    {
+      "path": "packages/anchor-sdk"
+    },
+    {
+      "path": "packages/ui-tokens"
+    },
+    {
+      "path": "apps/backend"
+    }
   ],
-  "exclude": ["node_modules", "dist", ".turbo"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".turbo"
+  ],
+  "extends": "expo/tsconfig.base"
 }

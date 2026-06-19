@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Text,
   View,
@@ -6,13 +6,38 @@ import {
   StyleSheet,
   Dimensions,
   TextInput,
+  Animated,
+  type ViewStyle,
 } from 'react-native';
-import Animated, {
-  FadeInUp,
-  FadeIn,
-} from 'react-native-reanimated';
 import { T } from '../theme';
-import { ShieldIcon, SparklesIcon, CheckIcon } from '../components/Icons';
+import { ShieldIcon, SparklesIcon, CheckIcon, DisciFiLogo } from '../components/Icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
+
+function FadeInView({
+  delay = 0,
+  duration = 400,
+  translateY = 20,
+  style,
+  children,
+}: {
+  delay?: number;
+  duration?: number;
+  translateY?: number;
+  style?: ViewStyle;
+  children: React.ReactNode;
+}) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const y = useRef(new Animated.Value(translateY)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration, delay, useNativeDriver: true }),
+      ...(translateY !== 0 ? [Animated.timing(y, { toValue: 0, duration, delay, useNativeDriver: true })] : []),
+    ]).start();
+  }, []);
+
+  return <Animated.View style={[style, { opacity, transform: [{ translateY: y }] }]}>{children}</Animated.View>;
+}
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -52,21 +77,19 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
 function StepWelcome({ onNext }: { onNext: () => void }) {
   return (
     <View style={stepStyles.center}>
-      <Animated.View entering={FadeInUp.duration(400)} style={stepStyles.logoContainer}>
-        <View style={stepStyles.logo}>
-          <SparklesIcon size={32} color={T.accentLight} />
-        </View>
-      </Animated.View>
-      <Animated.View entering={FadeInUp.delay(150).duration(400)}>
+      <FadeInView duration={400} style={stepStyles.logoContainer}>
+        <DisciFiLogo size={48} />
+      </FadeInView>
+      <FadeInView delay={150} duration={400}>
         <Text style={stepStyles.title}>DisciFi</Text>
         <Text style={stepStyles.tagline}>Financial discipline, onchain.</Text>
-      </Animated.View>
-      <Animated.View entering={FadeInUp.delay(300).duration(400)}>
+      </FadeInView>
+      <FadeInView delay={300} duration={400}>
         <TouchableOpacity onPress={onNext} style={stepStyles.primaryBtn} activeOpacity={0.8}>
           <Text style={stepStyles.primaryBtnText}>Get Started</Text>
         </TouchableOpacity>
         <Text style={stepStyles.hint}>Set up your spending rules in 3 steps</Text>
-      </Animated.View>
+      </FadeInView>
     </View>
   );
 }
@@ -74,16 +97,13 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
 function StepChoose({ selected, onSelect, onNext }: { selected: CovenantId | null; onSelect: (id: CovenantId) => void; onNext: () => void }) {
   return (
     <View style={stepStyles.stepContainer}>
-      <Animated.View entering={FadeIn.duration(300)}>
+      <FadeInView duration={300} translateY={0}>
         <Text style={stepStyles.stepLabel}>Choose your covenant</Text>
         <Text style={stepStyles.stepDesc}>Pick a discipline style that fits your needs</Text>
-      </Animated.View>
+      </FadeInView>
       <View style={stepStyles.grid}>
         {COVENANTS.map((c, i) => (
-          <Animated.View
-            key={c.id}
-            entering={FadeInUp.delay(80 * i).duration(300)}
-          >
+          <FadeInView key={c.id} delay={80 * i} duration={300}>
             <TouchableOpacity
               style={[
                 stepStyles.covenantCard,
@@ -101,7 +121,7 @@ function StepChoose({ selected, onSelect, onNext }: { selected: CovenantId | nul
                 </View>
               )}
             </TouchableOpacity>
-          </Animated.View>
+          </FadeInView>
         ))}
       </View>
       <TouchableOpacity
@@ -123,11 +143,11 @@ function StepSetLimit({ onNext }: { onNext: () => void }) {
 
   return (
     <View style={stepStyles.stepContainer}>
-      <Animated.View entering={FadeIn.duration(300)} style={{ alignItems: 'center' }}>
+      <FadeInView duration={300} translateY={0} style={{ alignItems: 'center' }}>
         <Text style={stepStyles.stepLabel}>Set daily limit</Text>
         <Text style={stepStyles.stepDesc}>Maximum you can spend per day</Text>
-      </Animated.View>
-      <Animated.View entering={FadeInUp.delay(150).duration(400)} style={stepStyles.limitContainer}>
+      </FadeInView>
+      <FadeInView delay={150} duration={400} style={stepStyles.limitContainer}>
         <View style={styles.limitInputRow}>
           <Text style={stepStyles.dollarSign}>$</Text>
           <TextInput
@@ -142,7 +162,7 @@ function StepSetLimit({ onNext }: { onNext: () => void }) {
           />
         </View>
         <Text style={stepStyles.limitLabel}>daily spending limit</Text>
-      </Animated.View>
+      </FadeInView>
       <TouchableOpacity
         style={stepStyles.primaryBtn}
         onPress={onNext}
@@ -157,16 +177,14 @@ function StepSetLimit({ onNext }: { onNext: () => void }) {
 function StepConfirm({ onComplete }: { onComplete: () => void }) {
   return (
     <View style={stepStyles.stepContainer}>
-      <Animated.View entering={FadeInUp.duration(400)} style={{ alignItems: 'center' }}>
-        <View style={stepStyles.successIcon}>
-          <CheckIcon size={32} color={T.safe} />
-        </View>
-      </Animated.View>
-      <Animated.View entering={FadeInUp.delay(200).duration(400)} style={{ alignItems: 'center' }}>
+      <FadeInView duration={400} style={{ alignItems: 'center' }}>
+        <DisciFiLogo size={40} />
+      </FadeInView>
+      <FadeInView delay={200} duration={400} style={{ alignItems: 'center' }}>
         <Text style={stepStyles.confirmTitle}>Ready to go</Text>
         <Text style={stepStyles.confirmDesc}>Your covenants are set up and active</Text>
-      </Animated.View>
-      <Animated.View entering={FadeInUp.delay(350).duration(400)} style={stepStyles.summaryCard}>
+      </FadeInView>
+      <FadeInView delay={350} duration={400} style={stepStyles.summaryCard}>
         <View style={stepStyles.summaryRow}>
           <ShieldIcon size={16} color={T.accentLight} />
           <Text style={stepStyles.summaryText}>Guardian · $800/day limit</Text>
@@ -175,12 +193,12 @@ function StepConfirm({ onComplete }: { onComplete: () => void }) {
           <PercentIcon16 />
           <Text style={stepStyles.summaryText}>Auto-save: 15%</Text>
         </View>
-      </Animated.View>
-      <Animated.View entering={FadeInUp.delay(500).duration(400)}>
+      </FadeInView>
+      <FadeInView delay={500} duration={400}>
         <TouchableOpacity onPress={onComplete} style={stepStyles.primaryBtn} activeOpacity={0.8}>
           <Text style={stepStyles.primaryBtnText}>Enter the Ledger</Text>
         </TouchableOpacity>
-      </Animated.View>
+      </FadeInView>
     </View>
   );
 }
@@ -188,7 +206,7 @@ function StepConfirm({ onComplete }: { onComplete: () => void }) {
 function PercentIcon16() {
   return (
     <View style={{ width: 16, height: 16, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontSize: 12, color: T.safe, fontFamily: T.fontBold }}>%</Text>
+      <Ionicons name="trending-up-outline" size={12} color={T.safe} />
     </View>
   );
 }

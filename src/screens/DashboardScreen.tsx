@@ -8,7 +8,8 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { T, formatCurrency, formatCompact } from '../theme';
-import { WalletIcon, ArrowUpIcon, ArrowDownIcon, HistoryIcon, MoreIcon, CopyIcon, SparklesIcon } from '../components/Icons';
+import { WalletIcon, ArrowUpIcon, ArrowDownIcon, HistoryIcon, MoreIcon, CopyIcon, SparklesIcon, DisciFiLogo } from '../components/Icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 interface Token {
   symbol: string;
@@ -66,9 +67,7 @@ export default function DashboardScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.headerLeft} onPress={() => navigation.navigate('Settings')} activeOpacity={0.7}>
-            <View style={styles.avatar}>
-              <SparklesIcon size={18} color={T.accentLight} />
-            </View>
+            <DisciFiLogo size={36} />
             <View>
               <Text style={styles.greeting}>Good morning</Text>
               <View style={styles.addressRow}>
@@ -77,8 +76,8 @@ export default function DashboardScreen() {
               </View>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.moreBtn} onPress={() => navigation.navigate('Settings')} activeOpacity={0.7}>
-            <MoreIcon size={20} color={T.ink} />
+          <TouchableOpacity style={styles.profileBtn} onPress={() => navigation.navigate('Settings')} activeOpacity={0.7}>
+            <Ionicons name="person-outline" size={18} color={T.inkMuted} />
           </TouchableOpacity>
         </View>
 
@@ -89,7 +88,7 @@ export default function DashboardScreen() {
           <Text style={styles.portfolioValue}>${formatCurrency(totalValue)}</Text>
           <View style={styles.changeRow}>
             <View style={styles.changeBadge}>
-              <ArrowUpIcon size={12} color={T.safe} />
+              <Ionicons name="trending-up-outline" size={12} color={T.safe} />
               <Text style={styles.changeText}>{change24h}%</Text>
             </View>
             <Text style={styles.changePeriod}>vs last week</Text>
@@ -251,7 +250,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: T.inkMuted,
   },
-  moreBtn: {
+  profileBtn: {
     width: 36,
     height: 36,
     borderRadius: T.radiusFull,
@@ -299,10 +298,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: T.safe + '20',
-    paddingHorizontal: T.s2,
-    paddingVertical: 2,
-    borderRadius: T.radiusFull,
+    backgroundColor: '#166534',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   changeText: {
     fontFamily: T.fontSemiBold,

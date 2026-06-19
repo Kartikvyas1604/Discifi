@@ -1,21 +1,40 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Text,
   View,
   TouchableOpacity,
   StyleSheet,
   Modal,
+  Animated,
+  type ViewStyle,
 } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-  Easing,
-  FadeIn,
-} from 'react-native-reanimated';
 import { T } from '../theme';
 import { AlertIcon, CheckIcon, CloseIcon } from '../components/Icons';
+
+function FadeInView({
+  delay = 0,
+  duration = 240,
+  style,
+  children,
+}: {
+  delay?: number;
+  duration?: number;
+  style?: ViewStyle;
+  children: React.ReactNode;
+}) {
+  const opacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(opacity, {
+      toValue: 1,
+      duration,
+      delay,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  return <Animated.View style={[style, { opacity }]}>{children}</Animated.View>;
+}
 
 interface EvidenceRow {
   label: string;
@@ -44,22 +63,10 @@ interface TransactionGateScreenProps {
 
 export default function TransactionGateScreen({ visible, onClose }: TransactionGateScreenProps) {
   const [resolved, setResolved] = useState<'rejected' | 'approved' | null>(null);
-  const rotation = useSharedValue(0);
 
   useEffect(() => {
-    if (visible) {
-      rotation.value = withRepeat(
-        withTiming(360, { duration: 8000, easing: Easing.linear }),
-        -1,
-        false,
-      );
-    }
     setResolved(null);
   }, [visible]);
-
-  const rotateStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotation.value}deg` }],
-  }));
 
   const handleReject = () => setResolved('rejected');
   const handleApprove = () => setResolved('approved');
@@ -68,7 +75,7 @@ export default function TransactionGateScreen({ visible, onClose }: TransactionG
     return (
       <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
         <View style={styles.overlay}>
-          <Animated.View entering={FadeIn.duration(240)} style={styles.modal}>
+          <FadeInView style={styles.modal}>
             <View style={styles.resolvedIcon}>
               <CloseIcon size={28} color={T.danger} />
             </View>
@@ -77,7 +84,7 @@ export default function TransactionGateScreen({ visible, onClose }: TransactionG
             <TouchableOpacity style={styles.dismissBtn} onPress={onClose} activeOpacity={0.8}>
               <Text style={styles.dismissText}>Dismiss</Text>
             </TouchableOpacity>
-          </Animated.View>
+          </FadeInView>
         </View>
       </Modal>
     );
@@ -87,7 +94,7 @@ export default function TransactionGateScreen({ visible, onClose }: TransactionG
     return (
       <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
         <View style={styles.overlay}>
-          <Animated.View entering={FadeIn.duration(240)} style={styles.modal}>
+          <FadeInView style={styles.modal}>
             <View style={[styles.resolvedIcon, { backgroundColor: T.safe + '20' }]}>
               <CheckIcon size={28} color={T.safe} />
             </View>
@@ -96,7 +103,7 @@ export default function TransactionGateScreen({ visible, onClose }: TransactionG
             <TouchableOpacity style={styles.dismissBtn} onPress={onClose} activeOpacity={0.8}>
               <Text style={styles.dismissText}>Dismiss</Text>
             </TouchableOpacity>
-          </Animated.View>
+          </FadeInView>
         </View>
       </Modal>
     );
@@ -105,7 +112,7 @@ export default function TransactionGateScreen({ visible, onClose }: TransactionG
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <Animated.View entering={FadeIn.duration(240)} style={styles.modal}>
+        <FadeInView style={styles.modal}>
           {/* Header */}
           <View style={styles.modalHandle} />
           <View style={styles.reviewHeader}>
@@ -152,7 +159,7 @@ export default function TransactionGateScreen({ visible, onClose }: TransactionG
               <Text style={styles.approveText}>Proceed Anyway</Text>
             </TouchableOpacity>
           </View>
-        </Animated.View>
+        </FadeInView>
       </View>
     </Modal>
   );
