@@ -553,4 +553,16 @@ describe('Deterministic from test vectors', () => {
     const addresses = [wallets.hot.address, wallets.vault.address, wallets.dao.address];
     assert.equal(new Set(addresses).size, 3);
   });
+
+  it('generate 10k wallets from seed, all valid', () => {
+    const seed = hexToBytes('deadbeefcafebabedeadbeefcafebabedeadbeefcafebabedeadbeefcafebabe');
+    for (let i = 0; i < 10000; i++) {
+      const path = `m/44'/501'/${i}'/0'`;
+      const { key: childKey } = slip10.derivePath(seed, path);
+      const pubkey = slip10.getPublicKey(childKey);
+      const addr = address.publicKeyToAddress(pubkey);
+      const valid = address.validateAddress(addr);
+      if (!valid) throw new Error(`Invalid address at index ${i}: ${addr}`);
+    }
+  });
 });
