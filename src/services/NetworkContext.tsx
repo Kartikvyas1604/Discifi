@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { Alert } from 'react-native';
 import { Connection, type Commitment } from '@solana/web3.js';
-import { RPC_ENDPOINTS } from './constants';
+import { RPC_ENDPOINTS, HELIUS_API_KEY } from './constants';
 import { storeNetwork, getNetwork } from './secureStorage';
 import type { Network } from './types';
 
@@ -17,9 +17,12 @@ const NetworkContext = createContext<NetworkContextType | null>(null);
 function createConnection(network: Network): Connection {
   const endpoints = RPC_ENDPOINTS[network];
   const commitment: Commitment = 'confirmed';
-  return new Connection(endpoints.primary, {
+  // Without Helius API key, use public Solana RPC (rate-limited but no auth needed)
+  const url = HELIUS_API_KEY ? endpoints.primary : endpoints.fallback;
+  const ws = HELIUS_API_KEY ? endpoints.ws : undefined;
+  return new Connection(url, {
     commitment,
-    wsEndpoint: endpoints.ws,
+    ...(ws ? { wsEndpoint: ws } : {}),
     confirmTransactionInitialTimeout: 60000,
   });
 }

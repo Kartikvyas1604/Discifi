@@ -1,7 +1,9 @@
 import { Platform } from 'react-native';
 
-// Helius API key – in production load from env
-export const HELIUS_API_KEY = 'YOUR_HELIUS_API_KEY';
+// Helius API key — set via .env (EXPO_PUBLIC_HELIUS_API_KEY) or fall back to project key
+// Get your free key at https://www.helius.dev
+const PROJECT_HELIUS_KEY = 'd02e82ba-340e-427c-837f-d1ea8dc1c9b1';
+export const HELIUS_API_KEY = (process.env.EXPO_PUBLIC_HELIUS_API_KEY as string) || PROJECT_HELIUS_KEY;
 
 export const RPC_ENDPOINTS = {
   mainnet: {
@@ -15,8 +17,8 @@ export const RPC_ENDPOINTS = {
     fallback: 'https://api.devnet.solana.com',
   },
   testnet: {
-    primary: 'https://api.testnet.solana.com',
-    ws: 'wss://api.testnet.solana.com',
+    primary: `https://testnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`,
+    ws: `wss://testnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`,
     fallback: 'https://api.testnet.solana.com',
   },
 };
