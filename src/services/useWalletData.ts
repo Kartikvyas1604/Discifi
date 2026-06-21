@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
-import { PublicKey } from '@solana/web3.js';
+import { PublicKey, Connection } from '@solana/web3.js';
 import { useNetwork } from './NetworkContext';
 import { fetchWalletData, fetchSOLBalance } from './walletDataService';
 import { fetchTransactionHistory, type HeliusTx } from './transactionService';
-import { HELIUS_TRANSACTIONS_URL } from './constants';
+import { RPC_ENDPOINTS, HELIUS_TRANSACTIONS_URL } from './constants';
 import type { WalletData, ParsedTransaction, TokenBalance } from './types';
 
 export interface UseWalletDataResult {
@@ -42,7 +42,14 @@ export function useWalletData(publicKey: PublicKey | null): UseWalletDataResult 
       if (data.status === 'fulfilled') {
         setWalletData({ ...data.value, loading: false });
       } else {
-        const solBalance = await fetchSOLBalance(connection, publicKey);
+        let solBalance = 0;
+        try {
+          const fallbackUrl = RPC_ENDPOINTS[network]?.fallback;
+          if (fallbackUrl) {
+            const fallbackConn = new Connection(fallbackUrl, 'confirmed');
+            solBalance = await fetchSOLBalance(fallbackConn, publicKey);
+          }
+        } catch {}
         setWalletData(prev => ({
           ...prev,
           solBalance,
