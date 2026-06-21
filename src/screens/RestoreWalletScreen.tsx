@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
@@ -120,11 +121,21 @@ export default function RestoreWalletScreen({ onComplete }: { onComplete: (walle
         </TouchableOpacity>
 
         {showAdvanced && (
-          <MnemonicInput
-            words={[passphrase]}
-            wordCount={12}
-            onWordChange={(_, word) => setPassphrase(word)}
-          />
+          <View style={styles.advancedRow}>
+            <Text style={styles.advancedLabel}>BIP39 Passphrase (optional)</Text>
+            <TextInput
+              style={styles.advancedInput}
+              value={passphrase}
+              onChangeText={v => setPassphrase(v)}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="off"
+              spellCheck={false}
+              keyboardType="default"
+              placeholder="passphrase"
+              placeholderTextColor={T.inkFaint}
+            />
+          </View>
         )}
 
         <TouchableOpacity
@@ -231,5 +242,24 @@ const styles = StyleSheet.create({
     fontFamily: T.fontBold,
     fontSize: 16,
     color: T.ink,
+  },
+  advancedRow: {
+    gap: T.s1,
+  },
+  advancedLabel: {
+    fontFamily: T.fontSemiBold,
+    fontSize: 14,
+    color: T.accent,
+  },
+  advancedInput: {
+    fontFamily: T.fontFamily,
+    fontSize: 16,
+    color: T.ink,
+    backgroundColor: T.surface,
+    borderRadius: T.radius,
+    paddingHorizontal: T.s3,
+    paddingVertical: T.s3,
+    borderWidth: T.hairline,
+    borderColor: T.border,
   },
 });
