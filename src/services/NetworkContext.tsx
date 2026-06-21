@@ -19,6 +19,7 @@ function createConnection(network: Network): Connection {
   const commitment: Commitment = 'confirmed';
   return new Connection(endpoints.primary, {
     commitment,
+    wsEndpoint: endpoints.ws,
     confirmTransactionInitialTimeout: 60000,
   });
 }

@@ -6,14 +6,17 @@ export const HELIUS_API_KEY = 'YOUR_HELIUS_API_KEY';
 export const RPC_ENDPOINTS = {
   mainnet: {
     primary: `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`,
+    ws: `wss://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`,
     fallback: 'https://api.mainnet-beta.solana.com',
   },
   devnet: {
     primary: `https://devnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`,
+    ws: `wss://devnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`,
     fallback: 'https://api.devnet.solana.com',
   },
   testnet: {
     primary: 'https://api.testnet.solana.com',
+    ws: 'wss://api.testnet.solana.com',
     fallback: 'https://api.testnet.solana.com',
   },
 };
