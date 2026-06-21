@@ -83,7 +83,7 @@ export async function fetchTransactionHistory(
   heliusUrl: string,
 ): Promise<ParsedTransaction[]> {
   try {
-    const signatures = await connection.getSignaturesForAddress(publicKey, { limit: 20 });
+    const signatures = await connection.getSignaturesForAddress(publicKey, { limit: 25 });
     if (signatures.length === 0) return [];
 
     const sigs = signatures.map(s => s.signature);

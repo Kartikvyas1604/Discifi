@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Text,
   View,
@@ -6,8 +6,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { PublicKey } from '@solana/web3.js';
 import * as Clipboard from 'expo-clipboard';
 import { T, formatCurrency, formatCompact } from '../theme';
 import { WalletIcon, ArrowUpIcon, ArrowDownIcon, HistoryIcon, MoreIcon, CopyIcon, SparklesIcon, DisciFiLogo } from '../components/Icons';
@@ -17,6 +19,8 @@ import { useNetwork } from '../services/NetworkContext';
 import { useWalletData } from '../services/useWalletData';
 import { NETWORK_COLORS, NETWORK_LABELS } from '../services/constants';
 import { requestAirdrop } from '../services/faucetService';
+import { walletEvents, EVENTS, type TransactionConfirmedPayload } from '../services/WalletEvents';
+import type { ParsedTransaction } from '../services/types';
 import { Alert } from 'react-native';
 
 function formatTokenBalance(balance: number, symbol: string): string {
@@ -39,12 +43,15 @@ function relativeTime(date: Date): string {
 
 export default function DashboardScreen() {
   const navigation = useNavigation<any>();
-  const { hotAddress } = useWallet();
+  const { hotAddress, hotPublicKey } = useWallet();
   const { network, connection } = useNetwork();
   const publicKey = useWallet().hotPublicKey;
   const { walletData, transactions, refetch } = useWalletData(publicKey);
   const [copied, setCopied] = useState(false);
   const [airdropLoading, setAirdropLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [pendingTxs, setPendingTxs] = useState<ParsedTransaction[]>([]);
+  const [forceRefreshKey, setForceRefreshKey] = useState(0);
 
   const handleCopyAddress = () => {
     Clipboard.setStringAsync(hotAddress);
@@ -66,6 +73,54 @@ export default function DashboardScreen() {
     }
   };
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
+
+  useEffect(() => {
+    if (!hotPublicKey) return;
+
+    const handleTxConfirm = (payload: TransactionConfirmedPayload) => {
+      setPendingTxs(prev => prev.filter(tx => tx.signature !== payload.signature));
+      setForceRefreshKey(k => k + 1);
+      refetch();
+    };
+
+    const handleBalanceRefresh = () => {
+      refetch();
+    };
+
+    walletEvents.on(EVENTS.TRANSACTION_CONFIRMED, handleTxConfirm);
+    walletEvents.on(EVENTS.BALANCE_SHOULD_REFRESH, handleBalanceRefresh);
+
+    const subscriptionId = connection.onAccountChange(
+      new PublicKey(hotPublicKey),
+      () => {
+        refetch();
+      },
+      'confirmed',
+    );
+
+    return () => {
+      walletEvents.off(EVENTS.TRANSACTION_CONFIRMED, handleTxConfirm);
+      walletEvents.off(EVENTS.BALANCE_SHOULD_REFRESH, handleBalanceRefresh);
+      connection.removeAccountChangeListener(subscriptionId);
+    };
+  }, [hotPublicKey, connection, refetch]);
+
+  useEffect(() => {
+    if (!transactions || transactions.length === 0) return;
+    setPendingTxs(prev => {
+      const pending = prev.filter(p => !transactions.some(t => t.signature === p.signature));
+      if (pending.length === prev.length) return prev;
+      return pending;
+    });
+  }, [transactions, forceRefreshKey]);
+
+  const allTransactions = [...pendingTxs, ...transactions];
+
   const networkColor = NETWORK_COLORS[network] || '#8E8E93';
 
   return (
@@ -74,6 +129,14 @@ export default function DashboardScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: T.s5 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#7C3AED"
+            colors={['#7C3AED']}
+          />
+        }
       >
         {/* Header */}
         <View style={styles.header}>
@@ -204,17 +267,20 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </View>
 
-          {transactions.length === 0 ? (
+          {allTransactions.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>No transactions yet</Text>
             </View>
           ) : (
-            transactions.slice(0, 5).map((tx, i) => (
-              <View key={tx.signature || i} style={styles.txRow}>
+            allTransactions.slice(0, 5).map((tx, i) => (
+              <View key={tx.signature || `pending-${i}`} style={styles.txRow}>
                 <View style={[styles.txIcon, {
-                  backgroundColor: tx.type === 'receive' ? T.safe + '20' : tx.type === 'send' ? T.danger + '20' : T.accent + '20'
+                  backgroundColor: tx.status === 'pending' ? T.warning + '20' :
+                    tx.type === 'receive' ? T.safe + '20' : tx.type === 'send' ? T.danger + '20' : T.accent + '20'
                 }]}>
-                  {tx.type === 'receive' ? (
+                  {tx.status === 'pending' ? (
+                    <ActivityIndicator size="small" color={T.warning} />
+                  ) : tx.type === 'receive' ? (
                     <ArrowDownIcon size={14} color={T.safe} />
                   ) : tx.type === 'send' ? (
                     <ArrowUpIcon size={14} color={T.danger} />
@@ -223,12 +289,15 @@ export default function DashboardScreen() {
                   )}
                 </View>
                 <View style={styles.txInfo}>
-                  <Text style={styles.txProtocol}>{tx.protocol}</Text>
+                  <Text style={styles.txProtocol}>
+                    {tx.status === 'pending' ? 'Sending...' : tx.protocol}
+                  </Text>
                   <Text style={styles.txDate}>{tx.date}</Text>
                 </View>
                 <View style={styles.txAmountCol}>
                   <Text style={[styles.txValue, {
-                    color: tx.type === 'receive' ? T.safe : tx.type === 'send' ? T.ink : T.ink
+                    color: tx.status === 'pending' ? T.warning :
+                      tx.type === 'receive' ? T.safe : T.ink
                   }]}>
                     {tx.type === 'receive' ? '+' : tx.type === 'send' ? '-' : ''}{tx.amount} {tx.token}
                   </Text>
