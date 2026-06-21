@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, Modal, Text } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, TouchableOpacity, StyleSheet, Modal, Text, ActivityIndicator } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
+import { PublicKey } from '@solana/web3.js';
 import { T } from '../theme';
 import { WalletIcon, ShieldIcon, VaultIcon, SendIcon, ReceiveIcon, SwapIcon, GlobeIcon, HistoryIcon, SettingsIcon } from '../components/Icons';
 import DashboardScreen from '../screens/DashboardScreen';
@@ -17,7 +18,11 @@ import ActivityScreen from '../screens/ActivityScreen';
 import BrowserScreen from '../screens/BrowserScreen';
 import TokenDetailScreen from '../screens/TokenDetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import { WalletProvider } from '../services/WalletContext';
 import type { WalletSet } from '../crypto/types';
+import { hasStoredWallet, getMnemonic, getPubKey } from '../services/secureStorage';
+import { mnemonicToSeed } from '../crypto/bip39';
+import { deriveWalletSet } from '../crypto/address';
 
 type TabParamList = {
   Ledger: undefined;
@@ -32,7 +37,7 @@ type RootStackParamList = {
   Swap: undefined;
   Activity: undefined;
   Browser: undefined;
-  TokenDetail: { symbol: string; name: string; value: number; change24h: number; color: string };
+  TokenDetail: { symbol: string; name: string; mint: string; balance: number; value: number; usdValue: number; change24h: number; color: string };
   Settings: undefined;
 };
 
@@ -115,11 +120,37 @@ export default function AppNavigator() {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [showTxGate, setShowTxGate] = useState(false);
   const [walletSet, setWalletSet] = useState<WalletSet | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const exists = await hasStoredWallet();
+      if (exists) {
+        const mnemonicStr = await getMnemonic();
+        if (mnemonicStr) {
+          const words = mnemonicStr.split(' ');
+          const seed = await mnemonicToSeed(words, '');
+          const wallets = deriveWalletSet(seed);
+          setWalletSet(wallets);
+          setShowOnboarding(false);
+        }
+      }
+      setLoading(false);
+    })();
+  }, []);
 
   const handleOnboardingComplete = (wallets: WalletSet) => {
     setWalletSet(wallets);
     setShowOnboarding(false);
   };
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: T.bg, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={T.accent} />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer>
@@ -130,6 +161,7 @@ export default function AppNavigator() {
         visible={showTxGate}
         onClose={() => setShowTxGate(false)}
       />
+      <WalletProvider walletSet={walletSet}>
       <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
         <Stack.Screen name="MainTabs" component={MainTabs} />
         <Stack.Screen name="Send" component={SendScreen} options={{ animation: 'slide_from_bottom' }} />
@@ -140,6 +172,7 @@ export default function AppNavigator() {
         <Stack.Screen name="TokenDetail" component={TokenDetailScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
       </Stack.Navigator>
+      </WalletProvider>
     </NavigationContainer>
   );
 }
