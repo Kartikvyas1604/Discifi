@@ -20,6 +20,7 @@ import { getMnemonic } from '../services/secureStorage';
 import { mnemonicToSeed } from '../crypto/bip39';
 import { deriveKeypair } from '../crypto/address';
 import { checkAllRules, recordTransaction } from '../services/ruleEngine';
+import { walletEvents, EVENTS } from '../services/WalletEvents';
 
 export default function SendScreen({ navigation }: any) {
   const { hotAddress, hotPublicKey } = useWallet();
@@ -73,9 +74,7 @@ export default function SendScreen({ navigation }: any) {
       const kp = deriveKeypair(seed, "m/44'/501'/0'/0'");
       const sender = Keypair.fromSeed(kp.privateKey);
 
-      const fee = await connection.getFeeForMessage(
-        (await connection.getLatestBlockhash('confirmed')).blockhash,
-      );
+      const latestBlockhash = await connection.getLatestBlockhash('confirmed');
 
       const result = await sendSOL({
         connection,
@@ -84,9 +83,31 @@ export default function SendScreen({ navigation }: any) {
         amountLamports,
       });
 
+      const confirmation = await connection.confirmTransaction(
+        {
+          signature: result.signature,
+          blockhash: latestBlockhash.blockhash,
+          lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+        },
+        'confirmed',
+      );
+
+      if (confirmation.value.err) {
+        throw new Error('Transaction failed on chain: ' + JSON.stringify(confirmation.value.err));
+      }
+
       await recordTransaction(usdValue, recipient.trim());
       setTxSignature(result.signature);
       setStep('done');
+
+      walletEvents.emit(EVENTS.TRANSACTION_CONFIRMED, {
+        signature: result.signature,
+        amount: parseFloat(amount),
+        token: 'SOL',
+        destination: recipient.trim(),
+        type: 'send',
+      });
+      walletEvents.emit(EVENTS.BALANCE_SHOULD_REFRESH);
     } catch (err: any) {
       setError(err.message || 'Transaction failed');
       setStep('confirm');
