@@ -1,6 +1,10 @@
 import { enableScreens } from 'react-native-screens';
 enableScreens();
 
+import 'react-native-get-random-values';
+import { Buffer } from 'buffer';
+globalThis.Buffer = Buffer;
+
 import { useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -15,6 +19,7 @@ import {
 } from '@expo-google-fonts/inter';
 import * as SplashScreen from 'expo-splash-screen';
 import AppNavigator from './src/navigation/AppNavigator';
+import { NetworkProvider } from './src/services/NetworkContext';
 import { T } from './src/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -40,10 +45,12 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <View style={styles.root} onLayout={onLayoutRootView}>
-        <StatusBar style="light" />
-        <AppNavigator />
-      </View>
+      <NetworkProvider>
+        <View style={styles.root} onLayout={onLayoutRootView}>
+          <StatusBar style="light" />
+          <AppNavigator />
+        </View>
+      </NetworkProvider>
     </SafeAreaProvider>
   );
 }
