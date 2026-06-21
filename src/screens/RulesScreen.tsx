@@ -136,7 +136,12 @@ export default function RulesScreen() {
         {/* Rules List */}
         <View style={styles.rulesSection}>
           {rules.map((rule) => (
-            <TouchableOpacity key={rule.id} onPress={() => handleEdit(rule)} activeOpacity={0.7}>
+            <TouchableOpacity
+              key={rule.id}
+              onPress={() => handleEdit(rule)}
+              activeOpacity={0.7}
+              style={styles.cardButton}
+            >
               <View style={[styles.ruleCard, !rule.active && styles.ruleCardInactive]}>
                 <View style={styles.ruleTop}>
                   <View style={styles.ruleInfo}>
@@ -209,6 +214,7 @@ const styles = StyleSheet.create({
   summaryLabel: { fontFamily: T.fontFamily, fontSize: 11, color: T.inkMuted, marginTop: T.s1 },
   rulesSection: { paddingHorizontal: T.s4, gap: T.s3 },
   ruleCard: { backgroundColor: T.surface, borderRadius: T.radius, paddingVertical: 16, paddingHorizontal: 16, borderWidth: 1, borderColor: T.accent + '20' },
+  cardButton: { width: '100%' },
   ruleCardInactive: { borderColor: T.border, opacity: 0.7 },
   ruleTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   ruleInfo: { flex: 1, flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', marginRight: T.s3 },
