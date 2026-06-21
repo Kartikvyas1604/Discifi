@@ -19,6 +19,8 @@ import { ShieldIcon, CheckIcon, DisciFiLogo } from '../components/Icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import GenerateWalletScreen from './GenerateWalletScreen';
 import RestoreWalletScreen from './RestoreWalletScreen';
+import { storeRules } from '../services/secureStorage';
+import { DEFAULT_RULES, type RuleConfig } from '../services/types';
 import type { WalletSet } from '../crypto/types';
 
 function FadeInView({
@@ -146,7 +148,7 @@ function StepChoose({ selected, onSelect, onNext }: { selected: CovenantId | nul
   );
 }
 
-function StepSetLimit({ onNext }: { onNext: () => void }) {
+function StepSetLimit({ onNext }: { onNext: (value: number) => void }) {
   const [value, setValue] = useState('800');
   const limitInputRef = useRef<TextInput>(null);
 
@@ -185,7 +187,7 @@ function StepSetLimit({ onNext }: { onNext: () => void }) {
           </FadeInView>
           <TouchableOpacity
             style={stepStyles.primaryBtn}
-            onPress={onNext}
+            onPress={() => onNext(parseInt(value, 10) || 800)}
             activeOpacity={0.8}
           >
             <Text style={stepStyles.primaryBtnText}>Continue</Text>
@@ -247,6 +249,13 @@ export default function OnboardingScreen({ onComplete }: { onComplete: (wallets:
     if (step < 5) setStep(s => s + 1);
   }, [step]);
 
+  const handleNextWithLimit = useCallback((dailyLimit: number) => {
+    setDailyLimit(dailyLimit);
+    setStep(s => s + 1);
+  }, []);
+
+  const [dailyLimit, setDailyLimit] = useState(800);
+
   const handleWalletCreated = useCallback((derived: WalletSet) => {
     setWallets(derived);
     setStep(3);
@@ -254,9 +263,11 @@ export default function OnboardingScreen({ onComplete }: { onComplete: (wallets:
 
   const handleFinalComplete = useCallback(() => {
     if (wallets) {
+      const rules: RuleConfig = { ...DEFAULT_RULES, dailyLimit };
+      storeRules(rules);
       onComplete(wallets);
     }
-  }, [wallets, onComplete]);
+  }, [wallets, onComplete, dailyLimit]);
 
   return (
     <View style={styles.container}>
@@ -274,7 +285,7 @@ export default function OnboardingScreen({ onComplete }: { onComplete: (wallets:
           onNext={handleNext}
         />
       )}
-      {step === 4 && <StepSetLimit onNext={handleNext} />}
+      {step === 4 && <StepSetLimit onNext={handleNextWithLimit} />}
       {step === 5 && <StepConfirm onComplete={handleFinalComplete} />}
       {step === 6 && <RestoreWalletScreen onComplete={handleWalletCreated} />}
     </View>
