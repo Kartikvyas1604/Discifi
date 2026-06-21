@@ -7,6 +7,11 @@ import {
   Dimensions,
   TextInput,
   Animated,
+  Keyboard,
+  TouchableWithoutFeedback,
+  Platform,
+  KeyboardAvoidingView,
+  InputAccessoryView,
   type ViewStyle,
 } from 'react-native';
 import { T } from '../theme';
@@ -143,37 +148,56 @@ function StepChoose({ selected, onSelect, onNext }: { selected: CovenantId | nul
 
 function StepSetLimit({ onNext }: { onNext: () => void }) {
   const [value, setValue] = useState('800');
+  const limitInputRef = useRef<TextInput>(null);
 
   return (
-    <View style={stepStyles.stepContainer}>
-      <FadeInView duration={300} translateY={0} style={{ alignItems: 'center' }}>
-        <Text style={stepStyles.stepLabel}>Set daily limit</Text>
-        <Text style={stepStyles.stepDesc}>Maximum you can spend per day</Text>
-      </FadeInView>
-      <FadeInView delay={150} duration={400} style={stepStyles.limitContainer}>
-        <View style={styles.limitInputRow}>
-          <Text style={stepStyles.dollarSign}>$</Text>
-          <TextInput
-            style={stepStyles.limitInput}
-            value={value}
-            onChangeText={setValue}
-            keyboardType="number-pad"
-            returnKeyType="done"
-            autoFocus
-            selectionColor={T.accent}
-            placeholderTextColor={T.inkFaint}
-          />
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View style={stepStyles.stepContainer}>
+          <FadeInView duration={300} translateY={0} style={{ alignItems: 'center' }}>
+            <Text style={stepStyles.stepLabel}>Set daily limit</Text>
+            <Text style={stepStyles.stepDesc}>Maximum you can spend per day</Text>
+          </FadeInView>
+          <FadeInView delay={150} duration={400} style={stepStyles.limitContainer}>
+            <TouchableWithoutFeedback onPress={() => limitInputRef.current?.focus()}>
+              <View style={styles.limitInputRow}>
+                <Text style={stepStyles.dollarSign}>$</Text>
+                <TextInput
+                  ref={limitInputRef}
+                  style={stepStyles.limitInput}
+                  value={value}
+                  onChangeText={setValue}
+                  keyboardType="number-pad"
+                  returnKeyType="done"
+                  autoFocus
+                  selectionColor={T.accent}
+                  placeholderTextColor={T.inkFaint}
+                  inputAccessoryViewID="limit-input-accessory"
+                  blurOnSubmit={true}
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                />
+              </View>
+            </TouchableWithoutFeedback>
+            <Text style={stepStyles.limitLabel}>daily spending limit</Text>
+          </FadeInView>
+          <TouchableOpacity
+            style={stepStyles.primaryBtn}
+            onPress={onNext}
+            activeOpacity={0.8}
+          >
+            <Text style={stepStyles.primaryBtnText}>Continue</Text>
+          </TouchableOpacity>
         </View>
-        <Text style={stepStyles.limitLabel}>daily spending limit</Text>
-      </FadeInView>
-      <TouchableOpacity
-        style={stepStyles.primaryBtn}
-        onPress={onNext}
-        activeOpacity={0.8}
-      >
-        <Text style={stepStyles.primaryBtnText}>Continue</Text>
-      </TouchableOpacity>
-    </View>
+      </TouchableWithoutFeedback>
+      {Platform.OS === 'ios' && (
+        <InputAccessoryView nativeID="limit-input-accessory">
+          <View style={{ width: 0, height: 0, backgroundColor: 'transparent' }} />
+        </InputAccessoryView>
+      )}
+    </KeyboardAvoidingView>
   );
 }
 
