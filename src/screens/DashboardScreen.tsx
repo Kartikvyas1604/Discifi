@@ -5,47 +5,19 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import { T, formatCurrency, formatCompact } from '../theme';
 import { WalletIcon, ArrowUpIcon, ArrowDownIcon, HistoryIcon, MoreIcon, CopyIcon, SparklesIcon, DisciFiLogo } from '../components/Icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
-
-interface Token {
-  symbol: string;
-  name: string;
-  balance: number;
-  value: number;
-  change24h: number;
-  color: string;
-}
-
-interface Tx {
-  id: string;
-  type: 'send' | 'receive' | 'swap';
-  protocol: string;
-  amount: number;
-  usdValue: number;
-  date: string;
-  token: string;
-}
-
-const MOCK_TOKENS: Token[] = [
-  { symbol: 'SOL', name: 'Solana', balance: 142.5, value: 28425.00, change24h: 3.2, color: '#9945FF' },
-  { symbol: 'USDC', name: 'USD Coin', balance: 8420.50, value: 8420.50, change24h: 0.01, color: '#2775CA' },
-  { symbol: 'JUP', name: 'Jupiter', balance: 1250, value: 3125.00, change24h: -1.8, color: '#F7931A' },
-  { symbol: 'BONK', name: 'Bonk', balance: 12500000, value: 2880.25, change24h: 12.4, color: '#FFD60A' },
-];
-
-const MOCK_TXS: Tx[] = [
-  { id: '1', type: 'swap', protocol: 'Jupiter DEX', amount: 1240, usdValue: 1240, date: '12m ago', token: 'USDC' },
-  { id: '2', type: 'receive', protocol: 'Coinbase', amount: 500, usdValue: 500, date: '1h ago', token: 'USDC' },
-  { id: '3', type: 'send', protocol: 'Magic Eden', amount: 0.5, usdValue: 80, date: '3h ago', token: 'SOL' },
-  { id: '4', type: 'swap', protocol: 'Orca LP', amount: 2450, usdValue: 2450, date: '5h ago', token: 'USDC' },
-  { id: '5', type: 'receive', protocol: 'Solend', amount: 1200, usdValue: 1200, date: '12h ago', token: 'USDC' },
-  { id: '6', type: 'send', protocol: 'Drift Protocol', amount: 1.2, usdValue: 240, date: '1d ago', token: 'SOL' },
-];
+import { useWallet } from '../services/WalletContext';
+import { useNetwork } from '../services/NetworkContext';
+import { useWalletData } from '../services/useWalletData';
+import { NETWORK_COLORS, NETWORK_LABELS } from '../services/constants';
+import { requestAirdrop } from '../services/faucetService';
+import { Alert } from 'react-native';
 
 function formatTokenBalance(balance: number, symbol: string): string {
   if (balance >= 1000) return balance.toLocaleString('en-US', { maximumFractionDigits: 2 });
@@ -53,18 +25,48 @@ function formatTokenBalance(balance: number, symbol: string): string {
   return balance.toFixed(4);
 }
 
+function formatAddress(addr: string): string {
+  if (addr.length <= 8) return addr;
+  return `${addr.slice(0, 4)}...${addr.slice(-4)}`;
+}
+
+function relativeTime(date: Date): string {
+  const diff = Date.now() - date.getTime();
+  if (diff < 60000) return 'Just now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  return `${Math.floor(diff / 3600000)}h ago`;
+}
+
 export default function DashboardScreen() {
   const navigation = useNavigation<any>();
-  const [totalValue] = useState(42850.75);
-  const [change24h] = useState(3.2);
-  const address = '4f3c9a8b...b82a';
+  const { hotAddress } = useWallet();
+  const { network, connection } = useNetwork();
+  const publicKey = useWallet().hotPublicKey;
+  const { walletData, transactions, refetch } = useWalletData(publicKey);
   const [copied, setCopied] = useState(false);
+  const [airdropLoading, setAirdropLoading] = useState(false);
 
   const handleCopyAddress = () => {
-    Clipboard.setStringAsync(address);
+    Clipboard.setStringAsync(hotAddress);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const handleAirdrop = async () => {
+    if (!publicKey) return;
+    setAirdropLoading(true);
+    try {
+      const sig = await requestAirdrop(connection, publicKey);
+      Alert.alert('Airdrop Sent', `1 SOL airdropped successfully!\n${sig.slice(0, 16)}...`);
+      refetch();
+    } catch {
+      Alert.alert('Airdrop Failed', 'Airdrop failed — the devnet faucet may be rate limiting. Try again later.');
+    } finally {
+      setAirdropLoading(false);
+    }
+  };
+
+  const networkColor = NETWORK_COLORS[network] || '#8E8E93';
 
   return (
     <View style={styles.container}>
@@ -80,7 +82,8 @@ export default function DashboardScreen() {
             <View>
               <Text style={styles.greeting}>Good morning</Text>
               <View style={styles.addressRow}>
-                <Text style={styles.address}>{address}</Text>
+                <View style={[styles.networkDot, { backgroundColor: networkColor }]} />
+                <Text style={styles.address}>{formatAddress(hotAddress)}</Text>
                 <TouchableOpacity onPress={handleCopyAddress} activeOpacity={0.7}>
                   {copied ? <Text style={styles.copiedBadge}>✓</Text> : <CopyIcon size={12} color={T.inkMuted} />}
                 </TouchableOpacity>
@@ -96,13 +99,14 @@ export default function DashboardScreen() {
         <View style={styles.portfolioCard}>
           <View style={styles.portfolioGlow} />
           <Text style={styles.portfolioLabel}>Total Balance</Text>
-          <Text style={styles.portfolioValue}>${formatCurrency(totalValue)}</Text>
+          {walletData.loading ? (
+            <ActivityIndicator color={T.accent} style={{ marginVertical: 20 }} />
+          ) : (
+            <Text style={styles.portfolioValue}>${formatCurrency(walletData.totalUsdValue)}</Text>
+          )}
           <View style={styles.changeRow}>
-            <View style={styles.changeBadge}>
-              <Ionicons name="trending-up-outline" size={12} color={T.safe} />
-              <Text style={styles.changeText}>{change24h}%</Text>
-            </View>
-            <Text style={styles.changePeriod}>vs last week</Text>
+            <Text style={styles.networkLabel}>{NETWORK_LABELS[network]}</Text>
+            <Text style={styles.changePeriod}>Updated {relativeTime(walletData.lastUpdated)}</Text>
           </View>
         </View>
 
@@ -126,50 +130,69 @@ export default function DashboardScreen() {
             </View>
             <Text style={styles.quickActionLabel}>Swap</Text>
           </TouchableOpacity>
+          {network !== 'mainnet' && (
+            <TouchableOpacity style={styles.quickAction} onPress={handleAirdrop} activeOpacity={0.8} disabled={airdropLoading}>
+              <View style={[styles.quickActionIcon, { backgroundColor: '#FFD60A20' }]}>
+                {airdropLoading ? (
+                  <ActivityIndicator size="small" color={T.warning} />
+                ) : (
+                  <Ionicons name="water-outline" size={20} color={T.warning} />
+                )}
+              </View>
+              <Text style={styles.quickActionLabel}>Airdrop</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Tokens Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Tokens</Text>
-            <TouchableOpacity activeOpacity={0.7}>
-              <Text style={styles.sectionAction}>Manage</Text>
-            </TouchableOpacity>
           </View>
 
-          {MOCK_TOKENS.map((token, i) => (
-            <TouchableOpacity
-              key={token.symbol}
-              style={[styles.tokenRow, i === MOCK_TOKENS.length - 1 && { borderBottomWidth: 0 }]}
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate('TokenDetail', {
-                symbol: token.symbol,
-                name: token.name,
-                value: token.value,
-                change24h: token.change24h,
-                color: token.color,
-              })}
-            >
-              <View style={[styles.tokenIcon, { backgroundColor: token.color + '20' }]}>
-                <Text style={[styles.tokenInitial, { color: token.color }]}>
-                  {token.symbol[0]}
-                </Text>
-              </View>
-              <View style={styles.tokenInfo}>
-                <Text style={styles.tokenSymbol}>{token.symbol}</Text>
-                <Text style={styles.tokenName}>{token.name}</Text>
-              </View>
-              <View style={styles.tokenBalance}>
-                <Text style={styles.tokenValue}>${formatCompact(token.value)}</Text>
-                <Text style={styles.tokenAmount}>
-                  {formatTokenBalance(token.balance, token.symbol)} {token.symbol}
-                </Text>
-              </View>
-              <Text style={[styles.tokenChange, { color: token.change24h >= 0 ? T.safe : T.danger }]}>
-                {token.change24h >= 0 ? '+' : ''}{token.change24h}%
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {walletData.loading ? (
+            <View style={{ padding: T.s4, alignItems: 'center' }}>
+              <ActivityIndicator color={T.accent} />
+            </View>
+          ) : walletData.tokens.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No tokens yet</Text>
+            </View>
+          ) : (
+            walletData.tokens.map((token, i) => (
+              <TouchableOpacity
+                key={token.mint}
+                style={[styles.tokenRow, i === walletData.tokens.length - 1 && { borderBottomWidth: 0 }]}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('TokenDetail', {
+                  symbol: token.symbol,
+                  name: token.name,
+                  mint: token.mint,
+                  balance: token.balance,
+                  value: token.usdValue,
+                  usdValue: token.usdValue,
+                  change24h: token.change24h || 0,
+                  color: token.mint === 'So11111111111111111111111111111111111111112' ? '#9945FF' : '#2775CA',
+                })}
+              >
+                <View style={[styles.tokenIcon, { backgroundColor: token.mint === 'So11111111111111111111111111111111111111112' ? '#9945FF20' : '#2775CA20' }]}>
+                  <Text style={[styles.tokenInitial, { color: token.mint === 'So11111111111111111111111111111111111111112' ? '#9945FF' : '#2775CA' }]}>
+                    {token.symbol[0]}
+                  </Text>
+                </View>
+                <View style={styles.tokenInfo}>
+                  <Text style={styles.tokenSymbol}>{token.symbol}</Text>
+                  <Text style={styles.tokenName}>{token.name}</Text>
+                </View>
+                <View style={styles.tokenBalance}>
+                  <Text style={styles.tokenValue}>${formatCompact(token.usdValue)}</Text>
+                  <Text style={styles.tokenAmount}>
+                    {formatTokenBalance(token.balance, token.symbol)} {token.symbol}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
 
         {/* Transactions Section */}
@@ -181,39 +204,38 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </View>
 
-          {MOCK_TXS.map((tx) => (
-            <TouchableOpacity
-              key={tx.id}
-              style={styles.txRow}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.txIcon, {
-                backgroundColor: tx.type === 'receive' ? T.safe + '20' : tx.type === 'send' ? T.danger + '20' : T.accent + '20'
-              }]}>
-                {tx.type === 'receive' ? (
-                  <ArrowDownIcon size={14} color={T.safe} />
-                ) : tx.type === 'send' ? (
-                  <ArrowUpIcon size={14} color={T.danger} />
-                ) : (
-                  <SparklesIcon size={12} color={T.accentLight} />
-                )}
-              </View>
-              <View style={styles.txInfo}>
-                <Text style={styles.txProtocol}>{tx.protocol}</Text>
-                <Text style={styles.txDate}>{tx.date}</Text>
-              </View>
-              <View style={styles.txAmountCol}>
-                <Text style={[styles.txValue, {
-                  color: tx.type === 'receive' ? T.safe : tx.type === 'send' ? T.ink : T.ink
+          {transactions.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No transactions yet</Text>
+            </View>
+          ) : (
+            transactions.slice(0, 5).map((tx, i) => (
+              <View key={tx.signature || i} style={styles.txRow}>
+                <View style={[styles.txIcon, {
+                  backgroundColor: tx.type === 'receive' ? T.safe + '20' : tx.type === 'send' ? T.danger + '20' : T.accent + '20'
                 }]}>
-                  {tx.type === 'receive' ? '+' : tx.type === 'send' ? '-' : ''}${formatCompact(tx.usdValue)}
-                </Text>
-                <Text style={styles.txToken}>
-                  {tx.type === 'swap' ? '→' : ''} {tx.amount} {tx.token}
-                </Text>
+                  {tx.type === 'receive' ? (
+                    <ArrowDownIcon size={14} color={T.safe} />
+                  ) : tx.type === 'send' ? (
+                    <ArrowUpIcon size={14} color={T.danger} />
+                  ) : (
+                    <SparklesIcon size={12} color={T.accentLight} />
+                  )}
+                </View>
+                <View style={styles.txInfo}>
+                  <Text style={styles.txProtocol}>{tx.protocol}</Text>
+                  <Text style={styles.txDate}>{tx.date}</Text>
+                </View>
+                <View style={styles.txAmountCol}>
+                  <Text style={[styles.txValue, {
+                    color: tx.type === 'receive' ? T.safe : tx.type === 'send' ? T.ink : T.ink
+                  }]}>
+                    {tx.type === 'receive' ? '+' : tx.type === 'send' ? '-' : ''}{tx.amount} {tx.token}
+                  </Text>
+                </View>
               </View>
-            </TouchableOpacity>
-          ))}
+            ))
+          )}
         </View>
       </ScrollView>
     </View>
@@ -221,249 +243,46 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: T.bg,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: T.s4,
-    paddingTop: 56,
-    paddingBottom: T.s4,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: T.s3,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: T.radiusFull,
-    backgroundColor: T.accent + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  greeting: {
-    fontFamily: T.fontSemiBold,
-    fontSize: 15,
-    color: T.ink,
-  },
-  addressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: T.s1,
-  },
-  address: {
-    fontFamily: T.fontFamily,
-    fontSize: 12,
-    color: T.inkMuted,
-  },
-  copiedBadge: {
-    fontFamily: T.fontBold,
-    fontSize: 12,
-    color: T.safe,
-  },
-  profileBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: T.radiusFull,
-    backgroundColor: T.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  portfolioCard: {
-    marginHorizontal: T.s4,
-    padding: T.s5,
-    borderRadius: T.radius,
-    backgroundColor: T.surface,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  portfolioGlow: {
-    position: 'absolute',
-    top: -60,
-    right: -40,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: T.accent,
-    opacity: 0.08,
-  },
-  portfolioLabel: {
-    fontFamily: T.fontFamily,
-    fontSize: 13,
-    color: T.inkMuted,
-    marginBottom: T.s1,
-  },
-  portfolioValue: {
-    fontFamily: T.fontBold,
-    fontSize: 40,
-    color: T.ink,
-    letterSpacing: -0.5,
-  },
-  changeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: T.s2,
-    marginTop: T.s2,
-  },
-  changeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: T.s1,
-    backgroundColor: '#166534',
-    paddingHorizontal: T.s2,
-    paddingVertical: T.s1,
-    borderRadius: T.radius,
-  },
-  changeText: {
-    fontFamily: T.fontSemiBold,
-    fontSize: 12,
-    color: T.safe,
-  },
-  changePeriod: {
-    fontFamily: T.fontFamily,
-    fontSize: 12,
-    color: T.inkMuted,
-  },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: T.s6,
-    paddingVertical: T.s5,
-    paddingHorizontal: T.s4,
-  },
-  quickAction: {
-    alignItems: 'center',
-    gap: T.s2,
-  },
-  quickActionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: T.radiusFull,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickActionLabel: {
-    fontFamily: T.fontFamily,
-    fontSize: 12,
-    color: T.inkMuted,
-  },
-  section: {
-    paddingHorizontal: T.s4,
-    marginBottom: T.s5,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: T.s2,
-  },
-  sectionTitle: {
-    fontFamily: T.fontSemiBold,
-    fontSize: 17,
-    color: T.ink,
-  },
-  sectionAction: {
-    fontFamily: T.fontFamily,
-    fontSize: 13,
-    color: T.accent,
-  },
-  tokenRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: T.s3,
-    borderBottomWidth: T.hairline,
-    borderBottomColor: T.border,
-  },
-  tokenIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: T.radiusFull,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tokenInitial: {
-    fontFamily: T.fontBold,
-    fontSize: 16,
-  },
-  tokenInfo: {
-    flex: 1,
-    marginLeft: T.s3,
-  },
-  tokenSymbol: {
-    fontFamily: T.fontSemiBold,
-    fontSize: 15,
-    color: T.ink,
-  },
-  tokenName: {
-    fontFamily: T.fontFamily,
-    fontSize: 12,
-    color: T.inkMuted,
-  },
-  tokenBalance: {
-    alignItems: 'flex-end',
-    marginRight: T.s3,
-  },
-  tokenValue: {
-    fontFamily: T.fontSemiBold,
-    fontSize: 15,
-    color: T.ink,
-  },
-  tokenAmount: {
-    fontFamily: T.fontFamily,
-    fontSize: 11,
-    color: T.inkMuted,
-  },
-  tokenChange: {
-    fontFamily: T.fontSemiBold,
-    fontSize: 13,
-    minWidth: 55,
-    textAlign: 'right',
-  },
-  txRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: T.s3,
-    borderBottomWidth: T.hairline,
-    borderBottomColor: T.border,
-  },
-  txIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: T.radiusFull,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  txInfo: {
-    flex: 1,
-    marginLeft: T.s3,
-  },
-  txProtocol: {
-    fontFamily: T.fontFamily,
-    fontSize: 14,
-    color: T.ink,
-  },
-  txDate: {
-    fontFamily: T.fontFamily,
-    fontSize: 11,
-    color: T.inkMuted,
-    marginTop: T.s1,
-  },
-  txAmountCol: {
-    alignItems: 'flex-end',
-  },
-  txValue: {
-    fontFamily: T.fontSemiBold,
-    fontSize: 14,
-  },
-  txToken: {
-    fontFamily: T.fontFamily,
-    fontSize: 11,
-    color: T.inkMuted,
-    marginTop: T.s1,
-  },
+  container: { flex: 1, backgroundColor: T.bg },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: T.s4, paddingTop: 56, paddingBottom: T.s4 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: T.s3 },
+  greeting: { fontFamily: T.fontSemiBold, fontSize: 15, color: T.ink },
+  addressRow: { flexDirection: 'row', alignItems: 'center', gap: T.s1 },
+  address: { fontFamily: T.fontFamily, fontSize: 12, color: T.inkMuted },
+  networkDot: { width: 8, height: 8, borderRadius: 4 },
+  copiedBadge: { fontFamily: T.fontBold, fontSize: 12, color: T.safe },
+  profileBtn: { width: 36, height: 36, borderRadius: T.radiusFull, backgroundColor: T.surface, alignItems: 'center', justifyContent: 'center' },
+  portfolioCard: { marginHorizontal: T.s4, padding: T.s5, borderRadius: T.radius, backgroundColor: T.surface, position: 'relative', overflow: 'hidden' },
+  portfolioGlow: { position: 'absolute', top: -60, right: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: T.accent, opacity: 0.08 },
+  portfolioLabel: { fontFamily: T.fontFamily, fontSize: 13, color: T.inkMuted, marginBottom: T.s1 },
+  portfolioValue: { fontFamily: T.fontBold, fontSize: 40, color: T.ink, letterSpacing: -0.5 },
+  changeRow: { flexDirection: 'row', alignItems: 'center', gap: T.s2, marginTop: T.s2 },
+  networkLabel: { fontFamily: T.fontSemiBold, fontSize: 12, color: T.warning },
+  changePeriod: { fontFamily: T.fontFamily, fontSize: 12, color: T.inkMuted },
+  quickActions: { flexDirection: 'row', justifyContent: 'center', gap: T.s6, paddingVertical: T.s5, paddingHorizontal: T.s4 },
+  quickAction: { alignItems: 'center', gap: T.s2 },
+  quickActionIcon: { width: 48, height: 48, borderRadius: T.radiusFull, alignItems: 'center', justifyContent: 'center' },
+  quickActionLabel: { fontFamily: T.fontFamily, fontSize: 12, color: T.inkMuted },
+  section: { paddingHorizontal: T.s4, marginBottom: T.s5 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: T.s2 },
+  sectionTitle: { fontFamily: T.fontSemiBold, fontSize: 17, color: T.ink },
+  sectionAction: { fontFamily: T.fontFamily, fontSize: 13, color: T.accent },
+  tokenRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: T.s3, borderBottomWidth: T.hairline, borderBottomColor: T.border },
+  tokenIcon: { width: 40, height: 40, borderRadius: T.radiusFull, alignItems: 'center', justifyContent: 'center' },
+  tokenInitial: { fontFamily: T.fontBold, fontSize: 16 },
+  tokenInfo: { flex: 1, marginLeft: T.s3 },
+  tokenSymbol: { fontFamily: T.fontSemiBold, fontSize: 15, color: T.ink },
+  tokenName: { fontFamily: T.fontFamily, fontSize: 12, color: T.inkMuted },
+  tokenBalance: { alignItems: 'flex-end', marginRight: T.s3 },
+  tokenValue: { fontFamily: T.fontSemiBold, fontSize: 15, color: T.ink },
+  tokenAmount: { fontFamily: T.fontFamily, fontSize: 11, color: T.inkMuted },
+  txRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: T.s3, borderBottomWidth: T.hairline, borderBottomColor: T.border },
+  txIcon: { width: 36, height: 36, borderRadius: T.radiusFull, alignItems: 'center', justifyContent: 'center' },
+  txInfo: { flex: 1, marginLeft: T.s3 },
+  txProtocol: { fontFamily: T.fontFamily, fontSize: 14, color: T.ink },
+  txDate: { fontFamily: T.fontFamily, fontSize: 11, color: T.inkMuted, marginTop: T.s1 },
+  txAmountCol: { alignItems: 'flex-end' },
+  txValue: { fontFamily: T.fontSemiBold, fontSize: 14 },
+  emptyState: { alignItems: 'center', paddingVertical: T.s5 },
+  emptyText: { fontFamily: T.fontFamily, fontSize: 14, color: T.inkFaint },
 });
