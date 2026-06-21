@@ -12,6 +12,7 @@ import MnemonicInput from '../components/MnemonicInput';
 import { validateMnemonic, mnemonicToSeed, clearBytes } from '../crypto/bip39';
 import { deriveWalletSet } from '../crypto/address';
 import type { WalletSet } from '../crypto/types';
+import { storeMnemonic, storePubKey } from '../services/secureStorage';
 
 export default function RestoreWalletScreen({ onComplete }: { onComplete: (wallets: WalletSet) => void }) {
   const [wordCount, setWordCount] = useState<12 | 24>(24);
@@ -55,6 +56,9 @@ export default function RestoreWalletScreen({ onComplete }: { onComplete: (walle
     try {
       const seed = await mnemonicToSeed(activeWords, passphrase);
       const wallets = deriveWalletSet(seed);
+      await storeMnemonic(activeWords.join(' '));
+      await storePubKey('hot', wallets.hot.address);
+      await storePubKey('vault', wallets.vault.address);
       clearBytes(seed);
       onComplete(wallets);
     } catch (err) {

@@ -15,6 +15,7 @@ import MnemonicInput from '../components/MnemonicInput';
 import { generateMnemonic, mnemonicToSeed, clearBytes } from '../crypto/bip39';
 import { deriveWalletSet } from '../crypto/address';
 import type { WalletSet } from '../crypto/types';
+import { storeMnemonic, storePubKey } from '../services/secureStorage';
 
 type Step = 'intro' | 'generate' | 'verify' | 'wallets' | 'complete';
 
@@ -107,8 +108,15 @@ export default function GenerateWalletScreen({ onComplete }: { onComplete: (wall
     }
   }, [verifyWords, mnemonic, verifyIndices, passphrase, entropy]);
 
-  const handleConfirm = useCallback(() => {
+  const handleConfirm = useCallback(async () => {
     if (wallets) {
+      try {
+        await storeMnemonic(mnemonic.join(' '));
+        await storePubKey('hot', wallets.hot.address);
+        await storePubKey('vault', wallets.vault.address);
+      } catch (err) {
+        console.error('Failed to store wallet securely');
+      }
       const wordsCopy = [...mnemonic];
       setMnemonic([]);
       wordsCopy.fill('');
