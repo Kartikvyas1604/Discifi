@@ -7,7 +7,7 @@
     "start": "npx expo start",
     "ios": "npx expo run:ios",
     "android": "npx expo run:android",
-    "build": "turbo run build",
+    "build": "turbo run build --filter=./packages/* --filter=./apps/*",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "test": "turbo run test",
