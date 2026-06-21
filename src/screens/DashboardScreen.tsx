@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Text,
   View,
@@ -7,12 +7,12 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { PublicKey } from '@solana/web3.js';
 import * as Clipboard from 'expo-clipboard';
 import { T, formatCurrency, formatCompact } from '../theme';
-import { WalletIcon, ArrowUpIcon, ArrowDownIcon, HistoryIcon, MoreIcon, CopyIcon, SparklesIcon, DisciFiLogo } from '../components/Icons';
+import { ArrowUpIcon, ArrowDownIcon, CopyIcon, SparklesIcon, DisciFiLogo } from '../components/Icons';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useWallet } from '../services/WalletContext';
 import { useNetwork } from '../services/NetworkContext';
@@ -21,7 +21,6 @@ import { NETWORK_COLORS, NETWORK_LABELS } from '../services/constants';
 import { requestAirdrop } from '../services/faucetService';
 import { walletEvents, EVENTS, type TransactionConfirmedPayload } from '../services/WalletEvents';
 import type { ParsedTransaction } from '../services/types';
-import { Alert } from 'react-native';
 
 function formatTokenBalance(balance: number, symbol: string): string {
   if (balance >= 1000) return balance.toLocaleString('en-US', { maximumFractionDigits: 2 });
@@ -95,20 +94,11 @@ export default function DashboardScreen() {
     walletEvents.on(EVENTS.TRANSACTION_CONFIRMED, handleTxConfirm);
     walletEvents.on(EVENTS.BALANCE_SHOULD_REFRESH, handleBalanceRefresh);
 
-    const subscriptionId = connection.onAccountChange(
-      new PublicKey(hotPublicKey),
-      () => {
-        refetch();
-      },
-      'confirmed',
-    );
-
     return () => {
       walletEvents.off(EVENTS.TRANSACTION_CONFIRMED, handleTxConfirm);
       walletEvents.off(EVENTS.BALANCE_SHOULD_REFRESH, handleBalanceRefresh);
-      connection.removeAccountChangeListener(subscriptionId);
     };
-  }, [hotPublicKey, connection, refetch]);
+  }, [hotPublicKey, refetch]);
 
   useEffect(() => {
     if (!transactions || transactions.length === 0) return;

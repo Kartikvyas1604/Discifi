@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { Alert } from 'react-native';
 import { Connection, type Commitment } from '@solana/web3.js';
 import { RPC_ENDPOINTS } from './constants';
@@ -72,12 +72,12 @@ export function NetworkProvider({ children }: { children: ReactNode }) {
     testnet: 'https://explorer.solana.com?cluster=testnet',
   };
 
-  const value: NetworkContextType = {
+  const value = useMemo<NetworkContextType>(() => ({
     network,
     setNetwork,
     connection,
     explorerUrl: explorerBase[network],
-  };
+  }), [network, setNetwork, connection]);
 
   if (!ready) return null;
 
