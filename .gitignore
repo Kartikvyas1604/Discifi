@@ -44,6 +44,11 @@ yarn-error.*
 # generated native folders
 /ios
 /android
-programs/*/target/
+
+# Anchor / Solana build artifacts
 target/
 .anchor/
+contracts/*/target/
+
+# Anchor test dist
+contracts/sentinel/tests/dist-tests/

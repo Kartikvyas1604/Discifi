@@ -1,0 +1,449 @@
+import { useState, useCallback, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Modal,
+} from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import { T } from '../theme';
+import SecureMnemonicDisplay from '../components/SecureMnemonicDisplay';
+import MnemonicInput from '../components/MnemonicInput';
+import { generateMnemonic, mnemonicToSeed, clearBytes } from '../crypto/bip39';
+import { deriveWalletSet } from '../crypto/address';
+import type { WalletSet } from '../crypto/types';
+import { storeMnemonic, storePubKey } from '../services/secureStorage';
+
+type Step = 'intro' | 'generate' | 'verify' | 'wallets' | 'complete';
+
+function fisherYatesShuffle<T>(arr: T[]): T[] {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+const MAX_WRONG_ATTEMPTS = 5;
+
+export default function GenerateWalletScreen({ onComplete }: { onComplete: (wallets: WalletSet) => void }) {
+  const [step, setStep] = useState<Step>('intro');
+  const [mnemonic, setMnemonic] = useState<string[]>([]);
+  const [entropy, setEntropy] = useState<Uint8Array | null>(null);
+  const [wallets, setWallets] = useState<WalletSet | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [copiedAddr, setCopiedAddr] = useState<string | null>(null);
+  const wrongAttempts = useRef(0);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+
+  const [verifyIndices] = useState(() => {
+    const indices = Array.from({ length: 24 }, (_, i) => i);
+    const shuffled = fisherYatesShuffle(indices);
+    return shuffled.slice(0, 6).sort((a, b) => a - b);
+  });
+
+  const [verifyWords, setVerifyWords] = useState<string[]>(Array(24).fill(''));
+  const [verifyErrors, setVerifyErrors] = useState<Record<number, string>>({});
+  const [correctFields, setCorrectFields] = useState<Record<number, boolean>>({});
+
+  const [passphrase, setPassphrase] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [copiedSeed, setCopiedSeed] = useState(false);
+
+  const handleCopySeed = useCallback(() => {
+    Clipboard.setStringAsync(mnemonic.join(' '));
+    setCopiedSeed(true);
+    setTimeout(() => setCopiedSeed(false), 2000);
+  }, [mnemonic]);
+
+  const handleCopyAddress = useCallback((label: string, address: string) => {
+    Clipboard.setStringAsync(address);
+    setCopiedAddr(label);
+    setTimeout(() => setCopiedAddr(null), 2000);
+  }, []);
+
+  const handleGenerate = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await generateMnemonic(256);
+      setMnemonic(result.mnemonic);
+      setEntropy(result.entropy);
+      setStep('generate');
+    } catch (err) {
+      console.error('Generation failed:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleVerify = useCallback(async () => {
+    const errors: Record<number, string> = {};
+    const correct: Record<number, boolean> = {};
+    let hasError = false;
+
+    for (const idx of verifyIndices) {
+      if (verifyWords[idx] !== mnemonic[idx]) {
+        errors[idx] = 'Incorrect — check your written copy and try again';
+        hasError = true;
+      } else {
+        correct[idx] = true;
+      }
+    }
+
+    setVerifyErrors(errors);
+    setCorrectFields(correct);
+
+    if (hasError) {
+      wrongAttempts.current += 1;
+      if (wrongAttempts.current >= MAX_WRONG_ATTEMPTS) {
+        setShowLimitModal(true);
+      }
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const seed = await mnemonicToSeed(mnemonic, passphrase);
+      const derived = deriveWalletSet(seed);
+      setWallets(derived);
+
+      clearBytes(seed);
+
+      if (entropy) clearBytes(entropy);
+
+      wrongAttempts.current = 0;
+      setStep('wallets');
+    } catch (err) {
+      console.error('Derivation failed:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [verifyWords, mnemonic, verifyIndices, passphrase, entropy]);
+
+  const handleHardReset = useCallback(() => {
+    wrongAttempts.current = 0;
+    setShowLimitModal(false);
+    setVerifyWords(Array(24).fill(''));
+    setVerifyErrors({});
+    setCorrectFields({});
+    setStep('generate');
+  }, []);
+
+  const handleConfirm = useCallback(async () => {
+    if (wallets) {
+      try {
+        await storeMnemonic(mnemonic.join(' '));
+        await storePubKey('hot', wallets.hot.address);
+        await storePubKey('vault', wallets.vault.address);
+      } catch (err) {
+        console.error('Failed to store wallet securely');
+      }
+      const wordsCopy = [...mnemonic];
+      setMnemonic([]);
+      wordsCopy.fill('');
+      wrongAttempts.current = 0;
+      onComplete(wallets);
+    }
+  }, [wallets, mnemonic, onComplete]);
+
+  if (step === 'intro') {
+    return (
+      <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <Text style={styles.title}>Create Your Wallet</Text>
+          <Text style={styles.subtitle}>
+            DisciFi will generate a 24-word seed phrase that is the master key to all your wallets.
+          </Text>
+
+          <View style={styles.warningCard}>
+            <Text style={styles.warningTitle}>⚠️ Important</Text>
+            <Text style={styles.warningText}>
+              Write down these 24 words in order and store them securely offline.
+              {'\n\n'}DisciFi never stores your seed phrase and cannot recover it.
+              {'\n\n'}Anyone with these words controls your funds — never share them.
+            </Text>
+          </View>
+
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>What you get:</Text>
+            <Text style={styles.infoItem}>• Main spending wallet (daily use)</Text>
+            <Text style={styles.infoItem}>• Vault cold wallet (long-term storage)</Text>
+            <Text style={styles.infoItem}>• DAO governance voting wallet</Text>
+            <Text style={styles.infoItem}>• Stealth spend and view wallets</Text>
+          </View>
+
+          <TouchableOpacity
+            style={styles.primaryBtn}
+            onPress={handleGenerate}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <ActivityIndicator color={T.ink} />
+            ) : (
+              <Text style={styles.primaryBtnText}>Generate Seed Phrase</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  if (step === 'generate') {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Your Seed Phrase</Text>
+          <Text style={styles.headerSub}>Write these 24 words down in order</Text>
+        </View>
+        <SecureMnemonicDisplay
+          words={mnemonic}
+          onTimeout={() => setStep('intro')}
+        />
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={styles.outlineBtn}
+            onPress={handleCopySeed}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.outlineBtnText}>
+              {copiedSeed ? '✓ Copied!' : 'Copy Seed Phrase'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.primaryBtn}
+            onPress={() => {
+              wrongAttempts.current = 0;
+              setVerifyWords(Array(24).fill(''));
+              setVerifyErrors({});
+              setCorrectFields({});
+              setStep('verify');
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.primaryBtnText}>I've Written Them Down</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  if (step === 'verify') {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle} numberOfLines={1} adjustsFontSizeToFit>
+            Verify Your Phrase
+          </Text>
+          <Text style={styles.headerSub}>
+            Enter the words at the requested positions to confirm you recorded them correctly
+          </Text>
+        </View>
+
+        <ScrollView style={styles.verifyScroll} contentContainerStyle={styles.verifyContent}>
+          <View style={styles.verifyGrid}>
+            {verifyIndices.map((origIdx, displayIdx) => (
+              <View key={displayIdx} style={styles.verifyRow}>
+                <View style={styles.verifyLabelRow}>
+                  <Text style={styles.verifyLabel}>
+                    Word #{origIdx + 1}
+                  </Text>
+                  {correctFields[origIdx] && (
+                    <Text style={styles.checkMark}>✓</Text>
+                  )}
+                </View>
+                <TextInput
+                  style={[
+                    styles.verifyInput,
+                    verifyErrors[origIdx] && styles.verifyInputError,
+                  ]}
+                  value={verifyWords[origIdx] || ''}
+                  onChangeText={word => {
+                    const copy = [...verifyWords];
+                    copy[origIdx] = word;
+                    setVerifyWords(copy);
+                    if (verifyErrors[origIdx]) {
+                      const newErrors = { ...verifyErrors };
+                      delete newErrors[origIdx];
+                      setVerifyErrors(newErrors);
+                    }
+                    if (correctFields[origIdx]) {
+                      const newCorrect = { ...correctFields };
+                      delete newCorrect[origIdx];
+                      setCorrectFields(newCorrect);
+                    }
+                  }}
+                  secureTextEntry={true}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="off"
+                  spellCheck={false}
+                  keyboardType="default"
+                  placeholder="type the word"
+                  placeholderTextColor={T.inkFaint}
+                />
+                {verifyErrors[origIdx] && (
+                  <Text style={styles.verifyErrorText}>
+                    {verifyErrors[origIdx]}
+                  </Text>
+                )}
+              </View>
+            ))}
+          </View>
+
+          <TouchableOpacity
+            style={styles.linkBtn}
+            onPress={() => setShowAdvanced(!showAdvanced)}
+          >
+            <Text style={styles.linkText}>
+              {showAdvanced ? 'Hide' : 'Show'} advanced options
+            </Text>
+          </TouchableOpacity>
+
+          {showAdvanced && (
+            <View style={styles.advancedRow}>
+              <Text style={styles.verifyLabel}>
+                BIP39 Passphrase (optional)
+              </Text>
+              <TextInput
+                style={styles.verifyInput}
+                value={passphrase}
+                onChangeText={v => setPassphrase(v)}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="off"
+                spellCheck={false}
+                keyboardType="default"
+                placeholder="passphrase"
+                placeholderTextColor={T.inkFaint}
+              />
+            </View>
+          )}
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={styles.primaryBtn}
+            onPress={handleVerify}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <ActivityIndicator color={T.ink} />
+            ) : (
+              <Text style={styles.primaryBtnText}>Verify & Generate Wallets</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <Modal visible={showLimitModal} transparent animationType="fade" onRequestClose={() => {}}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Too Many Incorrect Attempts</Text>
+              <Text style={styles.modalBody}>
+                For your security, you must start over.
+              </Text>
+              <TouchableOpacity style={styles.primaryBtn} onPress={handleHardReset} activeOpacity={0.8}>
+                <Text style={styles.primaryBtnText}>Start Over</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    );
+  }
+
+  if (step === 'wallets' && wallets) {
+    return (
+      <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <Text style={styles.title}>Your Wallets Are Ready</Text>
+          <Text style={styles.subtitle}>
+            These addresses are derived from your seed phrase. Verify them on Solana Explorer.
+          </Text>
+
+          {([
+            { label: '🔥 Hot Wallet', key: 'hot', addr: wallets.hot.address },
+            { label: '🏦 Vault Wallet', key: 'vault', addr: wallets.vault.address },
+            { label: '🗳️ DAO Wallet', key: 'dao', addr: wallets.dao.address },
+            { label: '🕵️ Stealth Spend', key: 'stealthSpend', addr: wallets.stealthSpend.address },
+            { label: '👁️ Stealth View', key: 'stealthView', addr: wallets.stealthView.address },
+          ] as const).map(({ label, key, addr }) => (
+            <View key={key} style={styles.addressCard}>
+              <View style={styles.addressHeader}>
+                <Text style={styles.addressLabel}>{label}</Text>
+                <TouchableOpacity onPress={() => handleCopyAddress(label, addr)} activeOpacity={0.7}>
+                  {copiedAddr === label ? (
+                    <Text style={styles.copiedAddrText}>✓ Copied</Text>
+                  ) : (
+                    <Text style={styles.copyAddrText}>Copy</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.addressValue}>{addr}</Text>
+            </View>
+          ))}
+
+          <TouchableOpacity
+            style={styles.primaryBtn}
+            onPress={handleConfirm}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.primaryBtnText}>Enter the Ledger</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  return null;
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: T.bg },
+  content: { padding: T.s4, gap: T.s4, paddingBottom: T.s5 },
+  header: { padding: T.s4, paddingBottom: T.s4 },
+  headerTitle: { fontFamily: T.fontBold, fontSize: 24, color: T.ink, marginBottom: T.s1 },
+  headerSub: { fontFamily: T.fontFamily, fontSize: 14, color: T.inkMuted, lineHeight: 20 },
+  title: { fontFamily: T.fontBold, fontSize: 24, color: T.ink, marginBottom: T.s2 },
+  subtitle: { fontFamily: T.fontFamily, fontSize: 15, color: T.inkMuted, lineHeight: 22 },
+  warningCard: { backgroundColor: T.warning + '15', borderRadius: T.radius, padding: T.s4, borderWidth: 1, borderColor: T.warning + '30' },
+  warningTitle: { fontFamily: T.fontBold, fontSize: 16, color: T.warning, marginBottom: T.s2 },
+  warningText: { fontFamily: T.fontFamily, fontSize: 14, color: T.ink, lineHeight: 20 },
+  infoCard: { backgroundColor: T.surface, borderRadius: T.radius, padding: T.s4 },
+  infoTitle: { fontFamily: T.fontSemiBold, fontSize: 15, color: T.ink, marginBottom: T.s2 },
+  infoItem: { fontFamily: T.fontFamily, fontSize: 14, color: T.inkMuted, lineHeight: 24 },
+  primaryBtn: { backgroundColor: T.accent, borderRadius: T.radius, paddingVertical: T.s4, alignItems: 'center', justifyContent: 'center', minHeight: 52 },
+  primaryBtnText: { fontFamily: T.fontBold, fontSize: 16, color: T.ink },
+  outlineBtn: { borderRadius: T.radius, paddingVertical: T.s3, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: T.accent + '40' },
+  outlineBtnText: { fontFamily: T.fontSemiBold, fontSize: 14, color: T.accent },
+  footer: { padding: T.s4, paddingBottom: T.s5, gap: T.s3 },
+  verifyScroll: { flex: 1 },
+  verifyContent: { padding: T.s4, gap: T.s4 },
+  verifyGrid: { gap: T.s3 },
+  verifyRow: { gap: T.s1 },
+  verifyLabelRow: { flexDirection: 'row', alignItems: 'center', gap: T.s2 },
+  verifyInput: { fontFamily: T.fontFamily, fontSize: 16, color: T.ink, backgroundColor: T.surface, borderRadius: T.radius, paddingHorizontal: T.s3, paddingVertical: T.s3, borderWidth: T.hairline, borderColor: T.border },
+  verifyInputError: { borderColor: T.danger },
+  verifyErrorText: { fontFamily: T.fontFamily, fontSize: 12, color: T.danger },
+  verifyLabel: { fontFamily: T.fontSemiBold, fontSize: 14, color: T.accent },
+  checkMark: { fontFamily: T.fontBold, fontSize: 14, color: T.safe },
+  advancedRow: { gap: T.s1 },
+  linkBtn: { alignSelf: 'center' },
+  linkText: { fontFamily: T.fontSemiBold, fontSize: 14, color: T.accent },
+  addressCard: { backgroundColor: T.surface, borderRadius: T.radius, padding: T.s4, borderWidth: T.hairline, borderColor: T.border },
+  addressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: T.s1 },
+  addressLabel: { fontFamily: T.fontSemiBold, fontSize: 13, color: T.inkMuted },
+  copyAddrText: { fontFamily: T.fontSemiBold, fontSize: 12, color: T.accent },
+  copiedAddrText: { fontFamily: T.fontSemiBold, fontSize: 12, color: T.safe },
+  addressValue: { fontFamily: T.fontMono, fontSize: 13, color: T.ink, letterSpacing: 0.5 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: T.s4 },
+  modalContent: { backgroundColor: T.surface, borderRadius: T.radius, padding: T.s5, alignItems: 'center', gap: T.s4 },
+  modalTitle: { fontFamily: T.fontBold, fontSize: 20, color: T.ink, textAlign: 'center' },
+  modalBody: { fontFamily: T.fontFamily, fontSize: 14, color: T.inkMuted, textAlign: 'center' },
+});

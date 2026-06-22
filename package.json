@@ -3,10 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "description": "DisciFi Sentinel - Production-grade, privacy-first, drain-proof hardware wallet system",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "contracts/*"
+  ],
   "scripts": {
-    "start": "npx expo start",
-    "ios": "npx expo run:ios",
-    "android": "npx expo run:android",
+    "mobile": "cd apps/mobile && npx expo start",
+    "mobile:ios": "cd apps/mobile && npx expo run:ios",
+    "mobile:android": "cd apps/mobile && npx expo run:android",
     "build": "turbo run build --filter=./packages/* --filter=./apps/*",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
@@ -15,7 +20,10 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "backend:dev": "turbo run dev --filter=@discifi/backend",
     "backend:build": "turbo run build --filter=@discifi/backend",
-    "backend:start": "node apps/backend/dist/server.js"
+    "backend:start": "node apps/backend/dist/server.js",
+    "contracts:test": "ANCHOR_PROVIDER_URL=https://api.devnet.solana.com ANCHOR_WALLET=~/.config/solana/id.json pnpm ts-mocha -p contracts/sentinel/tests/tsconfig.json -t 1000000 contracts/sentinel/tests/sentinel.ts",
+    "contracts:build": "anchor build",
+    "contracts:deploy": "anchor deploy --provider.cluster devnet"
   },
   "devDependencies": {
     "@coral-xyz/anchor": "^0.32.1",

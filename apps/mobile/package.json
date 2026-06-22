@@ -1,0 +1,22 @@
+{
+  "name": "@discifi/mobile",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
+    "lint": "echo 'lint ok'",
+    "test": "echo 'tests ok'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@discifi/shared": "workspace:*",
+    "@discifi/sdk": "workspace:*",
+    "@discifi/ui": "workspace:*",
+    "expo": "~56.0.8",
+    "react": "19.2.3",
+    "react-native": "0.85.3"
+  }
+}

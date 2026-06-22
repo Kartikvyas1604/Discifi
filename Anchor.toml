@@ -19,9 +19,9 @@ cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "NO_DNA=1 pnpm ts-mocha -p ./tests/tsconfig.json -t 1000000 tests/**/*.ts"
+test = "NO_DNA=1 pnpm ts-mocha -p contracts/sentinel/tests/tsconfig.json -t 1000000 contracts/sentinel/tests/**/*.ts"
 
 [workspace]
 members = [
-  "programs/discifi_sentinel",
+  "contracts/sentinel",
 ]

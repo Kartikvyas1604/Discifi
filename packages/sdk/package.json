@@ -1,0 +1,52 @@
+{
+  "name": "@discifi/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./wallet": {
+      "import": "./dist/wallet/index.js",
+      "types": "./dist/wallet/index.d.ts"
+    },
+    "./rules": {
+      "import": "./dist/rules/index.js",
+      "types": "./dist/rules/index.d.ts"
+    },
+    "./approvals": {
+      "import": "./dist/approvals/index.js",
+      "types": "./dist/approvals/index.d.ts"
+    },
+    "./stealth": {
+      "import": "./dist/stealth/index.js",
+      "types": "./dist/stealth/index.d.ts"
+    },
+    "./multisig": {
+      "import": "./dist/multisig/index.js",
+      "types": "./dist/multisig/index.d.ts"
+    },
+    "./inheritance": {
+      "import": "./dist/inheritance/index.js",
+      "types": "./dist/inheritance/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^2.0.0",
+    "@coral-xyz/anchor": "^0.30.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/node": "^20.14.0"
+  }
+}
