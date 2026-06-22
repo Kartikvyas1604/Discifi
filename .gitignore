@@ -45,3 +45,5 @@ yarn-error.*
 /ios
 /android
 programs/*/target/
+target/
+.anchor/
